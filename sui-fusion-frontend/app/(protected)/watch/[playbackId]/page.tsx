@@ -1,13 +1,9 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
-import * as Player from "@livepeer/react/player";
-import { getSrc } from "@livepeer/react/external";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { toast } from "sonner";
 import { Send, Users, Loader2, VideoOff, Home } from "lucide-react";
+import { useSendTip } from "@/hooks/useSuiFusionContract";
+import { useState } from "react";
 
 export default function WatchStreamPage() {
     const { playbackId } = useParams();
@@ -19,7 +15,11 @@ export default function WatchStreamPage() {
     const [viewerCount, setViewerCount] = useState(0);
     const [streamEnded, setStreamEnded] = useState(false);
     const [isStreamActive, setIsStreamActive] = useState(true);
+    const [showTipModal, setShowTipModal] = useState(false);
+    const [tipAmount, setTipAmount] = useState("");
     console.log(streamInfo)
+
+    const { mutateAsync: sendTip, isPending: isTipping } = useSendTip();
 
     const fetchStreamData = async () => {
         try {
@@ -105,6 +105,30 @@ export default function WatchStreamPage() {
         setMessages((prev) => [...prev, newMsg]);
         setMessage("");
         toast.success("Message sent!");
+    };
+
+    const handleSendTip = async () => {
+        if (!tipAmount || isNaN(Number(tipAmount)) || Number(tipAmount) <= 0) {
+            toast.error("Please enter a valid tip amount");
+            return;
+        }
+
+        try {
+            // In a real implementation, you would get the actual stream ID
+            // For now, we'll use a placeholder value
+            const streamId = 1;
+            
+            await sendTip({
+                streamId,
+                amount: Number(tipAmount) * 1000000000, // Convert to MIST (assuming 1 SUI = 1,000,000,000 MIST)
+                categories: [streamInfo?.category || "General"],
+            });
+            
+            setShowTipModal(false);
+            setTipAmount("");
+        } catch (error: any) {
+            toast.error("Failed to send tip: " + error.message);
+        }
     };
 
     if (isLoading) {
@@ -325,63 +349,103 @@ export default function WatchStreamPage() {
                             </div>
                         </div>
                     </div>
-                    <button className="px-5 py-2 rounded-full h-fit bg-primary hover:bg-secondary active:scale-95 transition">
+                    <button 
+                        onClick={() => setShowTipModal(true)}
+                        className="px-5 py-2 rounded-full h-fit bg-primary hover:bg-secondary active:scale-95 transition"
+                    >
                         Tip Streamer
                     </button>
                 </div>
-            </div>
 
-            {/* 💬 Chat Section */}
-            <div className="w-full md:w-[350px] bg-gray-900/50 border-l border-gray-800 flex flex-col">
-                <div className="p-4 border-b border-gray-700 bg-black/30">
-                    <h3 className="text-lg font-semibold">Live Chat</h3>
-                    <p className="text-xs text-gray-500 mt-1">{messages.length} messages</p>
-                </div>
-
-                <div className="flex-1 overflow-y-auto p-4 space-y-3">
-                    {messages.length > 0 ? (
-                        messages.map((msg) => (
-                            <div key={msg.id} className="flex items-start gap-2 animate-in fade-in slide-in-from-bottom-2">
-                                <div className="w-8 h-8 rounded-full bg-linear-to-br from-primary to-blue-600 flex items-center justify-center text-xs font-bold shrink-0">
-                                    {msg.user[0]}
-                                </div>
-                                <div className="flex-1 bg-gray-800/50 backdrop-blur-sm p-2.5 rounded-lg">
-                                    <p className="text-xs font-semibold text-primary">{msg.user}</p>
-                                    <p className="text-sm text-gray-200 mt-0.5">{msg.text}</p>
-                                </div>
-                            </div>
-                        ))
-                    ) : (
-                        <p className="text-gray-500 text-sm text-center mt-8">
-                            No messages yet. Be the first to say something!
-                        </p>
-                    )}
-                </div>
-
-                <div className="p-4 border-t border-gray-700 bg-black/30">
-                    <div className="flex items-center gap-2">
-                        <Input
-                            placeholder={streamEnded ? "Stream has ended" : "Say something..."}
-                            value={message}
-                            onChange={(e) => setMessage(e.target.value)}
-                            onKeyDown={(e) => e.key === "Enter" && sendMessage()}
-                            disabled={streamEnded}
-                            className="flex-1 bg-gray-800/50 border-gray-700 text-white placeholder:text-gray-500 focus:border-primary disabled:opacity-50"
-                        />
-                        <Button
-                            variant="secondary"
-                            onClick={sendMessage}
-                            disabled={!message.trim() || streamEnded}
-                            className="bg-primary hover:bg-primary/90 text-white px-3 disabled:opacity-50"
-                        >
-                            <Send size={16} />
-                        </Button>
+                {/* 💬 Chat Section */}
+                <div className="w-full md:w-[350px] bg-gray-900/50 border-l border-gray-800 flex flex-col">
+                    <div className="p-4 border-b border-gray-700 bg-black/30">
+                        <h3 className="text-lg font-semibold">Live Chat</h3>
+                        <p className="text-xs text-gray-500 mt-1">{messages.length} messages</p>
                     </div>
-                    <p className="text-xs text-gray-500 mt-2 text-center">
-                        {streamEnded ? "Chat disabled" : `Chat as Guest_${Math.floor(Math.random() * 1000)}`}
-                    </p>
+
+                    <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                        {messages.length > 0 ? (
+                            messages.map((msg) => (
+                                <div key={msg.id} className="flex items-start gap-2 animate-in fade-in slide-in-from-bottom-2">
+                                    <div className="w-8 h-8 rounded-full bg-linear-to-br from-primary to-blue-600 flex items-center justify-center text-xs font-bold shrink-0">
+                                        {msg.user[0]}
+                                    </div>
+                                    <div className="flex-1 bg-gray-800/50 backdrop-blur-sm p-2.5 rounded-lg">
+                                        <p className="text-xs font-semibold text-primary">{msg.user}</p>
+                                        <p className="text-sm text-gray-200 mt-0.5">{msg.text}</p>
+                                    </div>
+                                </div>
+                            ))
+                        ) : (
+                            <p className="text-gray-500 text-sm text-center mt-8">
+                                No messages yet. Be the first to say something!
+                            </p>
+                        )}
+                    </div>
+
+                    <div className="p-4 border-t border-gray-700 bg-black/30">
+                        <div className="flex items-center gap-2">
+                            <Input
+                                placeholder={streamEnded ? "Stream has ended" : "Say something..."}
+                                value={message}
+                                onChange={(e) => setMessage(e.target.value)}
+                                onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+                                disabled={streamEnded}
+                                className="flex-1 bg-gray-800/50 border-gray-700 text-white placeholder:text-gray-500 focus:border-primary disabled:opacity-50"
+                            />
+                            <Button
+                                variant="secondary"
+                                onClick={sendMessage}
+                                disabled={!message.trim() || streamEnded}
+                                className="bg-primary hover:bg-primary/90 text-white px-3 disabled:opacity-50"
+                            >
+                                <Send size={16} />
+                            </Button>
+                        </div>
+                        <p className="text-xs text-gray-500 mt-2 text-center">
+                            {streamEnded ? "Chat disabled" : `Chat as Guest_${Math.floor(Math.random() * 1000)}`}
+                        </p>
+                    </div>
                 </div>
             </div>
+
+            {/* Tip Modal */}
+            {showTipModal && (
+                <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50">
+                    <div className="bg-gray-900 border border-gray-700 rounded-xl p-6 w-full max-w-md">
+                        <h3 className="text-xl font-bold mb-4">Tip Streamer</h3>
+                        <p className="text-gray-400 mb-2">Enter the amount of SUI you'd like to tip</p>
+                        <div className="mb-4">
+                            <label className="block text-sm font-medium mb-2">Amount (SUI)</label>
+                            <input
+                                type="number"
+                                value={tipAmount}
+                                onChange={(e) => setTipAmount(e.target.value)}
+                                placeholder="0.00"
+                                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 focus:outline-none focus:border-primary"
+                                step="0.01"
+                                min="0"
+                            />
+                        </div>
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => setShowTipModal(false)}
+                                className="flex-1 py-2 rounded-lg border border-gray-700 hover:bg-gray-800 transition"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleSendTip}
+                                disabled={isTipping || !tipAmount}
+                                className="flex-1 py-2 rounded-lg bg-primary hover:bg-secondary transition disabled:opacity-50"
+                            >
+                                {isTipping ? "Sending..." : "Send Tip"}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

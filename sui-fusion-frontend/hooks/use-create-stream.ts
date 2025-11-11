@@ -1,3 +1,4 @@
+import { useCreateStream as useCreateStreamContract } from "./useSuiFusionContract";
 import http from "@/lib/http";
 import { useMutation } from "@tanstack/react-query";
 
@@ -9,15 +10,31 @@ interface StreamPayload {
 }
 
 export const useCreateStream = () => {
+  const { mutateAsync: createStreamOnChain } = useCreateStreamContract();
+  
   return useMutation({
     mutationFn: async (payload: StreamPayload) => {
+      // First create the stream on Livepeer
       const body = {
         name: payload.streamTitle,
         record: true,
       };
 
-      const { data } = await http.post("/api/create-stream", body);
-      return data;
+      const { data: livepeerData } = await http.post("/api/create-stream", body);
+      
+      // Then create the stream on-chain
+      if (livepeerData?.stream?.id && livepeerData?.stream?.playbackId) {
+        await createStreamOnChain({
+          name: payload.streamTitle,
+          description: payload.streamDescription,
+          playbackId: livepeerData.stream.playbackId,
+          playbackUrl: `https://livepeercdn.com/hls/${livepeerData.stream.playbackId}/index.m3u8`,
+          chatId: livepeerData.stream.id, // Using stream ID as chat ID for now
+          categories: [payload.category],
+        });
+      }
+      
+      return livepeerData;
     },
   });
 };

@@ -19,6 +19,7 @@ import Image from "next/image";
 import { toast } from "sonner";
 import { useCurrentAccount } from "@mysten/dapp-kit";
 import { useGetNsFromAddress } from "@/hooks/useGetAddressFromNs";
+import { useCreateProfile } from "@/hooks/useSuiFusionContract";
 
 const fusionAccountSchema = z.object({
     username: z
@@ -40,7 +41,7 @@ interface CreateFusionAccountProps {
 function CreateFusionAccount({ open, setOpen }: CreateFusionAccountProps) {
     const [preview, setPreview] = useState<string | null>(null);
     const currentAccount = useCurrentAccount();
-
+    const { mutateAsync: createProfile, isPending: isCreatingProfile } = useCreateProfile();
 
     const { data: suinsData, isLoading } = useGetNsFromAddress(
         currentAccount?.address || "",
@@ -78,17 +79,28 @@ function CreateFusionAccount({ open, setOpen }: CreateFusionAccountProps) {
     }, [currentAccount?.address, suinsData, form]);
 
     const onSubmit = async (values: FusionAccountData) => {
-        console.log("Fusion account:", values);
+        try {
+            // In a real implementation, you would upload the avatar to IPFS or another storage service
+            // and get a URL for it. For now, we'll use a placeholder URL.
+            const avatarUrl = "https://placehold.co/200x200";
+            
+            await createProfile({
+                name: values.username,
+                avatarUrl,
+            });
 
-        toast.success("Fusion account created successfully!", {
-            style: {
-                background: "rgba(0, 200, 100, 0.15)",
-                backdropFilter: "blur(10px)",
-                border: "1px solid rgba(0, 255, 120, 0.25)",
-                color: "#00ff88",
-            },
-        });
-        setOpen(false);
+            toast.success("Fusion account created successfully!", {
+                style: {
+                    background: "rgba(0, 200, 100, 0.15)",
+                    backdropFilter: "blur(10px)",
+                    border: "1px solid rgba(0, 255, 120, 0.25)",
+                    color: "#00ff88",
+                },
+            });
+            setOpen(false);
+        } catch (error: any) {
+            toast.error("Failed to create Fusion account: " + error.message);
+        }
     };
 
 
@@ -194,9 +206,10 @@ function CreateFusionAccount({ open, setOpen }: CreateFusionAccountProps) {
                             {/* Submit Button */}
                             <Button
                                 type="submit"
+                                disabled={isCreatingProfile}
                                 className="bg-linear-to-r from-primary to-secondary text-white font-semibold rounded-lg hover:opacity-90 active:scale-95 transition duration-300"
                             >
-                                Create Account
+                                {isCreatingProfile ? "Creating..." : "Create Account"}
                             </Button>
                         </form>
                     </Form>
