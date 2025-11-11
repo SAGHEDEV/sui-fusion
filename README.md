@@ -87,7 +87,7 @@ Create .env files in both /frontend and /backend folders:
 
 MONGO_URI=<your_mongodb_uri>
 
-SUI_NETWORK=<testnet>
+SUI_NETWORK= <testnet>
 
 LIVEPEER_API_KEY=<your_key>
 
