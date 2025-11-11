@@ -19,6 +19,7 @@ import Image from "next/image";
 import { toast } from "sonner";
 import { useCurrentAccount } from "@mysten/dapp-kit";
 import { useGetNsFromAddress } from "@/hooks/useGetAddressFromNs";
+import { useCreateProfile } from "@/hooks/use-create-profile";
 
 const fusionAccountSchema = z.object({
     username: z
@@ -40,6 +41,7 @@ interface CreateFusionAccountProps {
 function CreateFusionAccount({ open, setOpen }: CreateFusionAccountProps) {
     const [preview, setPreview] = useState<string | null>(null);
     const currentAccount = useCurrentAccount();
+    const { handleCreateProfile } = useCreateProfile()
 
 
     const { data: suinsData, isLoading } = useGetNsFromAddress(
@@ -78,17 +80,15 @@ function CreateFusionAccount({ open, setOpen }: CreateFusionAccountProps) {
     }, [currentAccount?.address, suinsData, form]);
 
     const onSubmit = async (values: FusionAccountData) => {
-        console.log("Fusion account:", values);
-
-        toast.success("Fusion account created successfully!", {
-            style: {
-                background: "rgba(0, 200, 100, 0.15)",
-                backdropFilter: "blur(10px)",
-                border: "1px solid rgba(0, 255, 120, 0.25)",
-                color: "#00ff88",
-            },
+        await handleCreateProfile.mutateAsync({
+            name: values.username,
+            avatarUrl: preview || "",
+        }, {
+            onSuccess: () => {
+                setOpen(false);
+            }
         });
-        setOpen(false);
+
     };
 
 
@@ -194,9 +194,10 @@ function CreateFusionAccount({ open, setOpen }: CreateFusionAccountProps) {
                             {/* Submit Button */}
                             <Button
                                 type="submit"
+                                disabled={form.formState.isSubmitting || handleCreateProfile.isPending}
                                 className="bg-linear-to-r from-primary to-secondary text-white font-semibold rounded-lg hover:opacity-90 active:scale-95 transition duration-300"
                             >
-                                Create Account
+                                {handleCreateProfile.isPending ? "Creating Profile" : "Create Account"}
                             </Button>
                         </form>
                     </Form>

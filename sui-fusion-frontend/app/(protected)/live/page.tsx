@@ -3,7 +3,7 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useCreateStream } from "@/hooks/use-create-stream";
+import { useCreateStream, useStreamHooks } from "@/hooks/use-create-stream";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -24,6 +24,8 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
+import { collection, doc, serverTimestamp, setDoc } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 const goLiveSchema = z.object({
   streamTitle: z.string().min(3, "Title must be at least 3 characters"),
@@ -36,6 +38,7 @@ type GoLiveValues = z.infer<typeof goLiveSchema>;
 export default function CreateStreamPage() {
   const router = useRouter();
   const { mutateAsync: postCreateStream, isPending } = useCreateStream();
+  const { handleCreateStreamMutation } = useStreamHooks()
 
   const form = useForm<GoLiveValues>({
     resolver: zodResolver(goLiveSchema),
@@ -46,12 +49,33 @@ export default function CreateStreamPage() {
     try {
       const res = await postCreateStream(values);
       const stream = res.stream;
-      toast.success("Stream created successfully!");
+
+      // Create chat for the stream in Firestore
+      await setDoc(doc(db, "streams", stream.id, "chatInfo", "metadata"), {
+        createdAt: serverTimestamp(),
+      });
+
+      console.log(stream)
+
+      await handleCreateStreamMutation.mutateAsync({
+        name: stream.name,
+        description: values.streamDescription,
+        playbackId: stream.playbackId,
+        playbackUrl: `https://livepeercdn.com/hls/${stream.playbackId}/index.m3u8`,
+        streamId: stream.id,
+        streamKey: stream.streamKey,
+        chatId: stream.id,
+        categories: [values.category],
+      });
+
+      toast.success("Stream created and chat initialized!");
       router.push(`/live/${stream.id}`);
     } catch (err: any) {
+      console.log(err)
       toast.error("Error creating stream: " + err.message);
     }
   };
+
 
   return (
     <div className="flex-1 h-full bg-black flex items-center justify-center text-white">
@@ -109,10 +133,10 @@ export default function CreateStreamPage() {
             />
             <Button
               type="submit"
-              disabled={isPending}
+              disabled={isPending || handleCreateStreamMutation.isPending}
               className="w-full bg-primary hover:bg-primary/90"
             >
-              {isPending ? "Setting up..." : "Go Live 🚀"}
+              {(isPending || handleCreateStreamMutation.isPending) ? "Setting up..." : "Go Live 🚀"}
             </Button>
           </form>
         </Form>
