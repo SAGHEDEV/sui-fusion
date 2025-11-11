@@ -86,8 +86,11 @@ echo "✅ Backend URL copied to clipboard! Open in your browser: http://localhos
 Create .env files in both /frontend and /backend folders:
 
 MONGO_URI=<your_mongodb_uri>
+
 SUI_NETWORK=<testnet>
+
 LIVEPEER_API_KEY=<your_key>
+
 JWT_SECRET=<your_secret>
 
 🌐 Open the App
