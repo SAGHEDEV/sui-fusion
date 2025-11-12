@@ -29,7 +29,9 @@ import { db } from "@/lib/firebase";
 
 const goLiveSchema = z.object({
   streamTitle: z.string().min(3, "Title must be at least 3 characters"),
-  streamDescription: z.string().min(10, "Description must be at least 10 characters"),
+  streamDescription: z
+    .string()
+    .min(10, "Description must be at least 10 characters"),
   category: z.string().min(1, "Select a category"),
 });
 
@@ -38,7 +40,7 @@ type GoLiveValues = z.infer<typeof goLiveSchema>;
 export default function CreateStreamPage() {
   const router = useRouter();
   const { mutateAsync: postCreateStream, isPending } = useCreateStream();
-  const { handleCreateStreamMutation } = useStreamHooks()
+  const { handleCreateStreamMutation } = useStreamHooks();
 
   const form = useForm<GoLiveValues>({
     resolver: zodResolver(goLiveSchema),
@@ -55,7 +57,7 @@ export default function CreateStreamPage() {
         createdAt: serverTimestamp(),
       });
 
-      console.log(stream)
+      console.log(stream);
 
       await handleCreateStreamMutation.mutateAsync({
         name: stream.name,
@@ -71,11 +73,10 @@ export default function CreateStreamPage() {
       toast.success("Stream created and chat initialized!");
       router.push(`/live/${stream.id}`);
     } catch (err: any) {
-      console.log(err)
+      console.log(err);
       toast.error("Error creating stream: " + err.message);
     }
   };
-
 
   return (
     <div className="flex-1 h-full bg-black flex items-center justify-center text-white">
@@ -103,7 +104,10 @@ export default function CreateStreamPage() {
                 <FormItem>
                   <FormLabel>Description</FormLabel>
                   <FormControl>
-                    <Textarea placeholder="What's your stream about?" {...field} />
+                    <Textarea
+                      placeholder="What's your stream about?"
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -115,7 +119,10 @@ export default function CreateStreamPage() {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Category</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <Select
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                  >
                     <FormControl className="w-full">
                       <SelectTrigger>
                         <SelectValue placeholder="Select category" />
@@ -136,7 +143,11 @@ export default function CreateStreamPage() {
               disabled={isPending || handleCreateStreamMutation.isPending}
               className="w-full bg-primary hover:bg-primary/90"
             >
-              {(isPending || handleCreateStreamMutation.isPending) ? "Setting up..." : "Go Live 🚀"}
+              {isPending
+                ? "Setting up..."
+                : handleCreateStreamMutation.isPending
+                ? "Awaiting transaction approval..."
+                : "Go Live 🚀"}
             </Button>
           </form>
         </Form>

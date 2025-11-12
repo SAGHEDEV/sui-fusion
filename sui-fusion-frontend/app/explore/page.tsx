@@ -71,11 +71,10 @@ const ExploreLivePage = () => {
                     <button
                         key={type.key}
                         onClick={() => setActiveFilter(type.key)}
-                        className={`px-4 py-2 rounded-full text-xs font-medium transition-colors border ${
-                            activeFilter === type.key
+                        className={`px-4 py-2 rounded-full text-xs font-medium transition-colors border ${activeFilter === type.key
                                 ? "bg-primary text-white border-primary"
                                 : "bg-muted/50 hover:bg-primary/30 text-muted-foreground hover:text-primary border-border hover:border-primary/50"
-                        }`}
+                            }`}
                     >
                         {type.name} ({type.count})
                     </button>
@@ -126,7 +125,7 @@ const ExploreLivePage = () => {
                         <LiveStreamCard
                             key={stream.stream_id || index}
                             title={stream.name || "Untitled Stream"}
-                            channel={stream.owner?.substring(0, 8) + "..." || "Unknown"}
+                            owner={stream.owner || "Unknown"}
                             category={stream.categories?.[0] || "Gaming"}
                             viewers={0}
                             thumbnail={"/default-thumbnail.jpeg"}

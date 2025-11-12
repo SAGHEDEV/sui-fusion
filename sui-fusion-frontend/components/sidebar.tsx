@@ -34,13 +34,17 @@ const UserItem = ({ name, initials }: { name: string; initials: string }) => (
   </div>
 )
 
-export default function Sidebar() {
+export default function Sidebar({ isMobile = false }: { isMobile?: boolean }) {
 
   const router = useRouter()
   const currentAccount = useCurrentAccount()
   const [openConnect, setOpenConnect] = useState(false)
   return (
-    <div className="w-64 bg-card border-r border-border flex flex-col overflow-y-auto">
+     <div
+      className={`${
+        isMobile ? "w-full" : "w-64 border-r border-border hidden lg:flex"
+      } bg-card flex flex-col overflow-y-auto`}
+    >
       {/* Header */}
       <div className="p-4 border-b border-border flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -69,7 +73,7 @@ export default function Sidebar() {
       </nav>
 
       {/* Users Section */}
-      <div className="flex-1 overflow-y-auto p-3">
+      <div className="flex-1 overflow-y-auto p-3 hidden lg:block">
         <div className="text-xs font-semibold text-muted-foreground uppercase px-2 py-2 mb-2">Top Streamers</div>
         <div className="space-y-2">
           <UserItem name="AcesFold" initials="AF" />

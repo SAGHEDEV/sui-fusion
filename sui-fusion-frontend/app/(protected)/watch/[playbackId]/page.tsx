@@ -18,6 +18,7 @@ import {
   addDoc,
   serverTimestamp,
 } from "firebase/firestore";
+import TipStreamerModal from "@/components/tip-streamer-modal";
 
 export default function WatchStreamPage() {
   const { playbackId } = useParams();
@@ -30,6 +31,7 @@ export default function WatchStreamPage() {
   const [viewerCount, setViewerCount] = useState(0);
   const [streamEnded, setStreamEnded] = useState(false);
   const [isStreamActive, setIsStreamActive] = useState(true);
+  const [openTipStreamer, setOpenTipStreamer] = useState(false);
 
   const suiClient = useSuiClient();
 
@@ -55,7 +57,7 @@ export default function WatchStreamPage() {
           });
 
           const streamData =
-            field?.data?.content && 'fields' in field.data.content
+            field?.data?.content && "fields" in field.data.content
               ? (field.data.content as any).fields?.value?.fields
               : null;
 
@@ -106,7 +108,8 @@ export default function WatchStreamPage() {
     return () => clearInterval(interval);
   }, [isStreamActive]);
 
-  const user = JSON.parse(localStorage.getItem("suifusion_profile")!) || "Guest";
+  const user =
+    JSON.parse(localStorage.getItem("suifusion_profile")!) || "Guest";
 
   /** ✅ Send message (local simulation for now) */
   const sendMessage = async () => {
@@ -116,17 +119,20 @@ export default function WatchStreamPage() {
       return;
     }
     try {
-      await addDoc(collection(db, "streams", streamInfo.chat_id as string, "messages"), {
-        text: message.trim(),
-        user: user.name || user,
-        timestamp: serverTimestamp(),
-      });
+      await addDoc(
+        collection(db, "streams", streamInfo.chat_id as string, "messages"),
+        {
+          text: message.trim(),
+          user: user.name || user,
+          timestamp: serverTimestamp(),
+        }
+      );
       setMessage("");
     } catch (err) {
       console.error("Error sending message:", err);
       toast.error("Failed to send message");
     }
-  }
+  };
   /** ✅ Loading UI */
   if (isLoading || suiLoading) {
     return (
@@ -162,7 +168,7 @@ export default function WatchStreamPage() {
 
   /** ✅ Main Player UI */
   return (
-    <div className="flex flex-1 flex-col md:flex-row w-full h-screen bg-black text-white overflow-hidden relative">
+    <div className="flex flex-1 h-full flex-col lg:flex-row w-full bg-black text-white relative">
       {/* 🎥 Stream Ended Overlay */}
       {streamEnded && (
         <div className="absolute inset-0 bg-black/95 backdrop-blur-lg z-50 flex flex-col items-center justify-center">
@@ -186,7 +192,7 @@ export default function WatchStreamPage() {
       )}
 
       {/* 🎬 Player */}
-      <div className="flex-1 flex flex-col p-4">
+      <div className="lg:flex-1 flex flex-col p-4 overflow-y-auto">
         <div className="w-full aspect-video rounded-lg overflow-hidden border border-gray-800 bg-black">
           <Player.Root
             src={getSrc({
@@ -245,12 +251,14 @@ export default function WatchStreamPage() {
               </div>
             </div>
           </div>
-          <Button className="bg-primary hover:bg-primary/90">Tip Streamer</Button>
+          <Button className="bg-primary hover:bg-primary/90" onClick={() => setOpenTipStreamer(true)}>
+            Tip Streamer
+          </Button>
         </div>
       </div>
 
       {/* 💬 Chat */}
-      <div className="w-full md:w-[350px] bg-gray-900/50 border-l border-gray-800 flex flex-col">
+      <div className="w-full lg:w-[350px] bg-gray-900/50 border-l border-gray-800 flex flex-col h-full">
         <div className="p-4 border-b border-gray-700">
           <h3 className="text-lg font-semibold">Live Chat</h3>
           <p className="text-xs text-gray-500 mt-1">
@@ -258,7 +266,7 @@ export default function WatchStreamPage() {
           </p>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4 space-y-3">
+        <div className="flex-1 overflow-y-auto p-4 space-y-3 max-h-[300px] lg:max-h-full overflow-auto">
           {messages.length > 0 ? (
             messages.map((msg) => (
               <div key={msg.id} className="flex items-start gap-2">
@@ -305,6 +313,13 @@ export default function WatchStreamPage() {
           </p>
         </div>
       </div>
+      <TipStreamerModal
+        streamId={streamInfo.stream_id}
+        streamerAddress={streamInfo.owner}
+        streamerName="Streamer"
+        open={openTipStreamer}
+        setOpen={setOpenTipStreamer}
+      />
     </div>
   );
 }

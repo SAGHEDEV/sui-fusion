@@ -88,6 +88,8 @@ export const useStreamHooks = () => {
       toast.error("Failed to create stream. Check console for details.");
     },
   });
+
+  
   const handleEndStreamMutation = useMutation({
     mutationFn: async ({
       streamId,
@@ -114,12 +116,12 @@ export const useStreamHooks = () => {
 
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["getStreams"] });
-      toast.success("Stream end successfully! 🚀");
+      toast.success("Stream ended successfully! 🚀");
     },
 
     onError: (error: any) => {
-      console.error("Error creating stream", error);
-      toast.error("Failed to create stream. Check console for details.");
+      console.error("Error ending stream", error);
+      toast.error("Failed to end stream. Check console for details.");
     },
   });
 

@@ -6,6 +6,7 @@ import { useBroadcastContext } from "@livepeer/react/broadcast";
 import { useParams, useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { formatDistanceToNowStrict } from 'date-fns';
 import {
     MicOff,
     Mic,
@@ -30,7 +31,8 @@ import { useSuiClientQuery } from "@mysten/dapp-kit";
 import type { SuiParsedData } from "@mysten/sui/client";
 import ShareStreamModal from "@/components/share-stream-modal";
 import { getIngest } from "@livepeer/react/external";
-
+import { useStreamHooks } from "@/hooks/use-create-stream";
+import TipCard from "@/components/miscellaneous/tip-card";
 
 function BroadcastStatus({
     __scopeBroadcast,
@@ -46,6 +48,52 @@ function BroadcastStatus({
     }, [status]);
 
     return null;
+}
+
+function EndStreamButton({
+    onEnd,
+    streamId,
+    __scopeBroadcast,
+}: {
+    onEnd: () => void;
+    streamId: string;
+} & Broadcast.BroadcastScopedProps<{}>) {
+    const [endStreamLoading, setEndStreamLoading] = useState(false);
+    const context = useBroadcastContext("EndStreamButton", __scopeBroadcast);
+    const { handleEndStreamMutation } = useStreamHooks();
+
+    const handleEndStream = async () => {
+        try {
+            setEndStreamLoading(true);
+            // Get the current media stream and stop all tracks
+            const currentState = context.store.getState();
+            const mediaStream = currentState.mediaStream;
+            if (mediaStream) {
+                const tracks = mediaStream.getTracks();
+                tracks.forEach((track) => {
+                    track.stop();
+                });
+            }
+            // Disable broadcasting
+            context.store.setState({ enabled: false, mediaStream: null });
+            // Wait for cleanup
+            await new Promise((resolve) => setTimeout(resolve, 500));
+            // Call API to end stream on backend
+            await fetch(`/api/stream/end/${streamId}`, { method: "POST" });
+            await handleEndStreamMutation.mutateAsync({ streamId });
+
+            onEnd();
+            toast.success("Stream ended successfully!");
+        } catch (err) {
+            console.error("Error ending stream:", err);
+            toast.error("Failed to end stream.");
+        }
+    };
+    return (
+        <Button disabled={endStreamLoading} variant="destructive" size="sm" onClick={handleEndStream}>
+            {!endStreamLoading ? "End Stream" : "Ending stream..."}
+        </Button>
+    );
 }
 
 export default function BroadcastPage() {
@@ -70,13 +118,12 @@ export default function BroadcastPage() {
         { enabled: !!streamId }
     );
 
-    const streamFields = streamObject?.data?.content as Extract<
-        SuiParsedData,
-        { dataType: "moveObject" }
-    > | undefined;
+    const streamFields = streamObject?.data?.content as
+        | Extract<SuiParsedData, { dataType: "moveObject" }>
+        | undefined;
 
     const streamField = streamFields?.fields as any | undefined;
-    const streamData = streamField?.value?.fields
+    const streamData = streamField?.value?.fields;
 
     console.log(streamData);
 
@@ -134,7 +181,7 @@ export default function BroadcastPage() {
             <Broadcast.Root
                 ingestUrl={getIngest(streamData.stream_key)}
                 audio
-                onError={(error)=>{
+                onError={(error) => {
                     console.error("Broadcast error:", error);
                 }}
             >
@@ -164,16 +211,12 @@ export default function BroadcastPage() {
                                 Share
                             </Button>
 
-                            <Button
-                                variant="destructive"
-                                size="sm"
-                                onClick={() => {
-                                    toast.success("Stream ended");
+                            <EndStreamButton
+                                streamId={streamData.stream_id}
+                                onEnd={() => {
                                     router.push("/live");
                                 }}
-                            >
-                                End Stream
-                            </Button>
+                            />
                         </div>
                     </div>
 
@@ -294,7 +337,9 @@ export default function BroadcastPage() {
             {/* Tips Section */}
             <div className="w-full p-4 flex flex-col gap-4 mt-28">
                 <div className="w-full p-5 rounded-lg bg-black/50 flex flex-col gap-4 border-t border-gray-800">
-                    <h2 className="text-white font-semibold mb-2 flex items-center gap-2">About Stream:</h2>
+                    <h2 className="text-white font-semibold mb-2 flex items-center gap-2">
+                        About Stream:
+                    </h2>
                     <p className="text-gray-400 text-sm">{streamData.description}</p>
                 </div>
                 <div className="w-full p-5 rounded-lg bg-black/50 flex flex-col gap-4 border-t border-gray-800">
@@ -312,30 +357,7 @@ export default function BroadcastPage() {
                     ) : (
                         <div className="max-h-64 overflow-y-auto pr-1 custom-scrollbar w-full grid gap-3 grid-cols-3 items-center justify-center ">
                             {streamData.tips.map((tip: any, i: number) => (
-                                <div
-                                    key={i}
-                                    className="w-full flex items-center justify-between bg-gray-900/50 border border-gray-800 rounded-lg px-4 py-3 hover:bg-gray-900/80 transition"
-                                >
-                                    <div className="flex items-center gap-3">
-                                        <div className="h-8 w-8 bg-linear-to-br from-purple-500 to-indigo-600 rounded-full flex items-center justify-center text-sm font-bold text-white">
-                                            {tip.name?.[0]?.toUpperCase() || "?"}
-                                        </div>
-                                        <div>
-                                            <p className="text-sm text-white font-medium">
-                                                {tip.name || "Anonymous"}{" "}
-                                                <span className="text-gray-400 text-xs">
-                                                    tipped you
-                                                </span>
-                                            </p>
-                                            <p className="text-xs text-gray-500">
-                                                {new Date(tip.timestamp).toLocaleString()}
-                                            </p>
-                                        </div>
-                                    </div>
-                                    <span className="text-sui-blue font-semibold">
-                                        {tip.amount} SUI
-                                    </span>
-                                </div>
+                                <TipCard key={i} tip={tip} />
                             ))}
                         </div>
                     )}

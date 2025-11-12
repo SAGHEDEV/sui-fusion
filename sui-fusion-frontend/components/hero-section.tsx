@@ -48,7 +48,7 @@ export default function HeroSection() {
 
         {/* Featured Streamers */}
         <div className="w-full overflow-hidden mt-2">
-          <div className="flex gap-4 min-w-full">
+          <div className="flex flex-wrap gap-4 min-w-full">
             {featuredStreamers.map((streamer, i) => (
               <div
                 key={i}
