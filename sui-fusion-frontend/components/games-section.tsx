@@ -1,6 +1,8 @@
 "use client"
 
-const GameCard = ({ title, image, fps, category }: { title: string; image: string; fps: string; category: string }) => (
+import Link from "next/link";
+
+const GameCard = ({ title, image, fps, category, link }: { title: string; image: string; fps: string; category: string; link: string }) => (
   <div className="bg-card rounded-lg overflow-hidden hover:border-primary/50 border border-border transition-all cursor-pointer group">
     <div className="relative h-48 overflow-hidden bg-black">
       <img
@@ -9,9 +11,9 @@ const GameCard = ({ title, image, fps, category }: { title: string; image: strin
         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
       />
       <div className="absolute inset-0 bg-linear-to-t from-black via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-4">
-        <button className="w-full bg-primary hover:bg-primary/90 text-white py-2 rounded font-bold text-sm transition-colors">
+        <Link href={link} className="w-full bg-primary hover:bg-primary/90 text-white py-2 font-bold text-sm transition-colors text-center rounded-md">
           Get Game
-        </button>
+        </Link>
       </div>
     </div>
     <div className="p-4">
@@ -32,12 +34,12 @@ const GameCategory = ({ name }: { name: string }) => (
 
 export default function GamesSection() {
   const games = [
-    { title: "Valorant", image: "/valorant-cover.png", fps: "FPS", category: "Shooter" },
-    { title: "PUBG", image: "/pubg-game-cover.jpg", fps: "FPS", category: "Shooter" },
-    { title: "The Sims", image: "/the-sims-game.jpg", fps: "FPS", category: "Simulation" },
-    { title: "Minecraft", image: "/minecraft-game.png", fps: "FPS", category: "Sandbox" },
-    { title: "Fortnite", image: "/generic-battle-royale-cover.png", fps: "FPS", category: "Shooter" },
-    { title: "GTA V", image: "/gta-5-game-cover.jpg", fps: "FPS", category: "Adventure" },
+    { title: "Xociety", image: "/xociety.jpg", fps: "FPS", category: "Shooter", link: "https://xociety.io/" },
+    { title: "Warped", image: "/warped.jpg", fps: "FPS", category: "Shooter", link: "https://www.warped.games/" },
+    { title: "Panzer Dogs", image: "/panzer-dogs.jpg", fps: "FPS", category: "Simulation", link: "https://home.panzerdogs.io/" },
+    { title: "Dark Machine", image: "/darkmachine.jpg", fps: "FPS", category: "Sandbox", link: "https://darkmachinegame.com/" },
+    { title: "Cosmo Cadia", image: "/cosmocadia.jpg", fps: "FPS", category: "Shooter", link: "https://www.cosmocadia.io/" },
+    { title: "GTA V", image: "/gta-5-game-cover.jpg", fps: "FPS", category: "Adventure", link: "https://www.rockstargames.com/V/" },
   ]
 
   return (

@@ -152,7 +152,6 @@ export default function BroadcastPage() {
       <Broadcast.Root
         ingestUrl={getIngest(streamData.stream_key)}
         audio
-        onError={(error) => console.error("Broadcast error:", error)}
       >
         <BroadcastStatus />
 

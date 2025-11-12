@@ -1,16 +1,23 @@
 import http from "@/lib/http";
-import { useSignAndExecuteTransaction, useSuiClient } from "@mysten/dapp-kit";
+import {
+  useCurrentAccount,
+  useSuiClient,
+  useWallets,
+  useSignTransaction,
+  useSignAndExecuteTransaction,
+} from "@mysten/dapp-kit";
 import { Transaction } from "@mysten/sui/transactions";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { isEnokiWallet } from "@mysten/enoki";
+import { toB64 } from "@mysten/sui/utils";
 
 interface StreamPayload {
-    streamTitle: string;
-    streamDescription: string;
-    category: string;
-    thumbnail?: File;
+  streamTitle: string;
+  streamDescription: string;
+  category: string;
+  thumbnail?: File;
 }
-
 
 export const useCreateStream = () => {
   return useMutation({
@@ -26,12 +33,69 @@ export const useCreateStream = () => {
   });
 };
 
-
-
 export const useStreamHooks = () => {
-  const { mutateAsync } = useSignAndExecuteTransaction();
+  const currentAccount = useCurrentAccount();
   const suiClient = useSuiClient();
   const queryClient = useQueryClient();
+  const wallets = useWallets();
+  const { mutateAsync: signTransaction } = useSignTransaction();
+  const { mutateAsync: signAndExecuteTransaction } = useSignAndExecuteTransaction();
+
+  const isUsingZkLogin = wallets.some(
+    (w) =>
+      isEnokiWallet(w) &&
+      w.accounts.some((acc) => acc.address === currentAccount?.address)
+  );
+
+  const sponsorAndExecute = async (tx: Transaction) => {
+    tx.setSender(currentAccount!.address);
+
+    const transactionKindBytes = await tx.build({
+      client: suiClient,
+      onlyTransactionKind: true,
+    });
+
+    // Sponsor transaction
+    const sponsorResponse = await fetch("/api/sponsor-transaction", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        transactionKindBytes: toB64(transactionKindBytes),
+        sender: currentAccount!.address,
+        network: "testnet",
+      }),
+    });
+
+    if (!sponsorResponse.ok) {
+      throw new Error("Failed to sponsor transaction");
+    }
+
+    const { digest, bytes } = await sponsorResponse.json();
+
+    // Sign transaction
+    const { signature } = await signTransaction({
+      transaction: Transaction.from(bytes),
+    });
+
+    if (!signature) {
+      throw new Error("Failed to sign transaction");
+    }
+
+    // Execute transaction
+    const executeResponse = await fetch("/api/execute-sponsored-transaction", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ digest, signature }),
+    });
+
+    if (!executeResponse.ok) {
+      throw new Error("Failed to execute transaction");
+    }
+
+    const { result } = await executeResponse.json();
+    await suiClient.waitForTransaction({ digest: result.digest });
+    return result;
+  };
 
   const handleCreateStreamMutation = useMutation({
     mutationFn: async ({
@@ -43,7 +107,7 @@ export const useStreamHooks = () => {
       categories,
       streamId,
       streamKey,
-      thumbnailUrl
+      thumbnailUrl,
     }: {
       name: string;
       description: string;
@@ -73,12 +137,15 @@ export const useStreamHooks = () => {
         ],
       });
 
-      tx.setGasBudget(100000000); // adjust for heavier stream data
-      const result = await mutateAsync({ transaction: tx });
-
-      await suiClient.waitForTransaction({ digest: result.digest });
-
-      return result;
+      if (isUsingZkLogin) {
+        return await sponsorAndExecute(tx);
+      } else {
+        // ============ REGULAR WALLET FLOW ============
+        tx.setGasBudget(100000000);
+        const result = await signAndExecuteTransaction({ transaction: tx });
+        await suiClient.waitForTransaction({ digest: result.digest });
+        return result;
+      }
     },
 
     onSuccess: () => {
@@ -92,13 +159,8 @@ export const useStreamHooks = () => {
     },
   });
 
-  
   const handleEndStreamMutation = useMutation({
-    mutationFn: async ({
-      streamId,
-    }: {
-      streamId: string;
-    }) => {
+    mutationFn: async ({ streamId }: { streamId: string }) => {
       const tx = new Transaction();
 
       tx.moveCall({
@@ -106,15 +168,18 @@ export const useStreamHooks = () => {
         arguments: [
           tx.object(process.env.NEXT_PUBLIC_STREAM_REGISTRY_ID!),
           tx.pure.string(streamId),
-        ],  
+        ],
       });
 
-      tx.setGasBudget(100000000); // adjust for heavier stream data
-      const result = await mutateAsync({ transaction: tx });
-
-      await suiClient.waitForTransaction({ digest: result.digest });
-
-      return result;
+      if (isUsingZkLogin) {
+        return await sponsorAndExecute(tx);
+      } else {
+        // ============ REGULAR WALLET FLOW ============
+        tx.setGasBudget(100000000);
+        const result = await signAndExecuteTransaction({ transaction: tx });
+        await suiClient.waitForTransaction({ digest: result.digest });
+        return result;
+      }
     },
 
     onSuccess: () => {
@@ -128,6 +193,5 @@ export const useStreamHooks = () => {
     },
   });
 
-  return {handleCreateStreamMutation, handleEndStreamMutation};
+  return { handleCreateStreamMutation, handleEndStreamMutation };
 };
-

@@ -28,7 +28,7 @@ const fusionAccountSchema = z.object({
         .min(3, "Username must be at least 3 characters")
         .max(20, "Username too long")
         .regex(/^[a-zA-Z0-9_]+$/, "Only letters, numbers, and underscores allowed"),
-    avatar: z.any().refine((file) => file instanceof File, "Please upload a valid image"),
+    avatar: z.any().optional(), // Make it optional since we track file separately
     walletAddress: z.string().min(10, "Invalid wallet address"),
 });
 
@@ -49,7 +49,7 @@ function CreateFusionAccount({ open, setOpen }: CreateFusionAccountProps) {
     const { data: suinsData, isLoading } = useGetNsFromAddress(
         currentAccount?.address || "",
         {
-            enabled: !!currentAccount?.address  // Only run query when address exists
+            enabled: !!currentAccount?.address
         }
     );
 
@@ -62,18 +62,15 @@ function CreateFusionAccount({ open, setOpen }: CreateFusionAccountProps) {
         },
     });
 
-    // 🔥 Auto-update wallet address when it becomes available
+    // Auto-update wallet address when it becomes available
     useEffect(() => {
         if (currentAccount?.address) {
             form.setValue("walletAddress", currentAccount.address);
         }
     }, [currentAccount, form]);
 
-    console.log("SuiNS Data:", suinsData);
-
     useEffect(() => {
         if (currentAccount?.address && suinsData) {
-            console.log("SuiNS data:", suinsData);
             // Pre-fill username if SuiNS name exists
             if (suinsData.name) {
                 form.setValue("username", suinsData.name);
@@ -94,45 +91,65 @@ function CreateFusionAccount({ open, setOpen }: CreateFusionAccountProps) {
                 toast.error("Please upload a valid image file");
                 return;
             }
+
+            // Set the file in state
+            setProfileFile(file);
+            
+            // Create preview
             const url = URL.createObjectURL(file);
             setPreview(url);
-            setProfileFile(file);
+            
+            // Update form value (optional since we use profileFile state)
+            form.setValue("avatar", file);
         }
     };
 
     const onSubmit = async (values: FusionAccountData) => {
+        // Validate avatar separately before submission
+        if (!profileFile) {
+            toast.error("Please upload a profile avatar");
+            return;
+        }
+
         let thumbnailUrl: string | null = null;
         try {
-
-            thumbnailUrl = await uploadThumbnail({ file: profileFile as File, storagePath: "profiles" });
+            thumbnailUrl = await uploadThumbnail({ 
+                file: profileFile, 
+                storagePath: "profiles" 
+            });
+            
             if (!thumbnailUrl) {
                 toast.error("Failed to upload thumbnail");
                 return;
             }
+            
             await handleCreateProfile.mutateAsync({
                 name: values.username,
-                avatarUrl: thumbnailUrl || "",
+                avatarUrl: thumbnailUrl,
             }, {
                 onSuccess: () => {
-                    setOpen(false);
                     localStorage.setItem(
                         "suifusion_profile",
                         JSON.stringify({
                             address: currentAccount?.address,
-                            name: values?.username,
-                            avatar_url: thumbnailUrl as string,
+                            name: values.username,
+                            avatar_url: thumbnailUrl,
                             created_at: new Date().toISOString(),
                         })
                     );
+                    
+                    // Reset and close
+                    form.reset();
+                    setPreview(null);
+                    setProfileFile(null);
+                    setOpen(false);
                 }
-            }).finally(() => {
-                form.reset();
-                setPreview(null);
-                setOpen(false);
-            },);
+            });
         } catch (err: any) {
             console.error(err);
-            toast.error("Error creating stream: " + err.message);
+            toast.error("Error creating profile: " + err.message);
+        } finally {
+            setOpen(false)
         }
     };
 
@@ -177,6 +194,7 @@ function CreateFusionAccount({ open, setOpen }: CreateFusionAccountProps) {
                                                         width={112}
                                                         height={112}
                                                         className="rounded-full object-cover border border-gray-600"
+                                                        unoptimized
                                                     />
                                                 ) : (
                                                     <span className="text-gray-400 text-xs text-center">
@@ -185,7 +203,9 @@ function CreateFusionAccount({ open, setOpen }: CreateFusionAccountProps) {
                                                 )}
                                             </div>
                                         </FormControl>
-                                        <FormMessage />
+                                        {!profileFile && form.formState.isSubmitted && (
+                                            <p className="text-red-500 text-sm">Please upload a profile avatar</p>
+                                        )}
                                     </FormItem>
                                 )}
                             />
@@ -233,7 +253,7 @@ function CreateFusionAccount({ open, setOpen }: CreateFusionAccountProps) {
                                 disabled={form.formState.isSubmitting || handleCreateProfile.isPending}
                                 className="bg-linear-to-r from-primary to-secondary text-white font-semibold rounded-lg hover:opacity-90 active:scale-95 transition duration-300"
                             >
-                                {handleCreateProfile.isPending ? "Creating Profile" : "Create Account"}
+                                {handleCreateProfile.isPending ? "Creating Profile..." : "Create Account"}
                             </Button>
                         </form>
                     </Form>

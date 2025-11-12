@@ -59,7 +59,7 @@ export default function TopBar() {
               <DrawerHeader className="border-b border-border flex items-center justify-between px-4 py-3">
                 <div className="flex items-center gap-2">
                   <Image
-                    src="/sui-icon.webp"
+                    src="/sui-fusion-logo.png"
                     alt="Sui"
                     width={400}
                     height={400}
@@ -131,7 +131,7 @@ export default function TopBar() {
       {/* Center - Logo for mobile */}
       <div className="flex lg:hidden items-center gap-2">
         <Image
-          src="/sui-icon.webp"
+          src="/sui-fusion-logo.png"
           alt="Sui"
           width={400}
           height={400}

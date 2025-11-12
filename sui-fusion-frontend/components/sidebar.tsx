@@ -52,7 +52,7 @@ export default function Sidebar({ isMobile = false, setOpen }: { isMobile?: bool
       {/* Header */}
       <div className="p-4 border-b border-border flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Image src="/sui-icon.webp" alt="Sui" width={400} height={400} className="w-10 h-10" />
+          <Image src="/sui-fusion-logo.png" alt="Sui" width={400} height={400} className="w-10 h-10" />
           <span className="font-bold text-sm">SuiFusion</span>
         </div>
       </div>
