@@ -1,3 +1,4 @@
+import { motion } from 'framer-motion';
 import { useProfile } from '@/hooks/use-profile';
 import { useCurrentAccount } from '@mysten/dapp-kit';
 import { Heart, MessageCircle } from 'lucide-react'
@@ -27,7 +28,12 @@ const LiveStreamCard = ({
   const currentAccount = useCurrentAccount()
   const { profileData, isCheckingProfile } = useProfile({ address: owner })
   return (
-    <div className="bg-card rounded-lg overflow-hidden hover:border-primary/50 border border-border transition-all cursor-pointer group">
+    <motion.div
+      whileHover={{ scale: 1.03 }}
+      whileTap={{ scale: 0.98 }}
+      transition={{ type: "spring", stiffness: 300, damping: 15 }}
+      className="bg-card rounded-lg overflow-hidden hover:border-primary/50 border border-border transition-all cursor-pointer group shadow-md hover:shadow-primary/20"
+    >
       <div className="relative h-40 overflow-hidden bg-black">
         <img
           src={thumbnail || "/placeholder.svg"}
@@ -110,7 +116,7 @@ const LiveStreamCard = ({
           </button>
         </div>
       </div>
-    </div>
+    </motion.div>
   )
 }
 

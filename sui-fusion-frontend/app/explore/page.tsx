@@ -2,8 +2,9 @@
 
 import LiveStreamCard from '@/components/miscellaneous/live-stream-card'
 import { useSuiClientQuery } from '@mysten/dapp-kit';
-import React, { useState, useMemo } from 'react'
+import { useState, useMemo } from 'react'
 import { Loader2 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 type FilterType = "all" | "live" | "ended";
 
@@ -17,16 +18,14 @@ const ExploreLivePage = () => {
         }
     );
 
-    // Extract stream IDs from the dynamic fields
     const streamIds = dynamicFields?.data
         ?.filter(field => field.name.type === "0x1::string::String")
         ?.map(field => field.objectId) || [];
 
-    // Then fetch each stream individually
     const { data: streams, isLoading: isLoadingStreams } = useSuiClientQuery(
         "multiGetObjects",
         {
-            ids: streamIds?.map(id => id) as string[], // Array of stream object IDs
+            ids: streamIds?.map(id => id) as string[],
             options: {
                 showContent: true,
                 showOwner: true,
@@ -39,7 +38,6 @@ const ExploreLivePage = () => {
 
     const allStreamData = streams?.map((stream: any) => stream.data?.content?.fields.value.fields) || [];
 
-    // Filter streams based on active filter
     const filteredStreams = useMemo(() => {
         if (activeFilter === "all") return allStreamData;
         if (activeFilter === "live") return allStreamData.filter((stream: any) => stream.is_active === true);
@@ -53,12 +51,29 @@ const ExploreLivePage = () => {
     const isLoading = isLoadingFields || isLoadingStreams;
 
     return (
-        <div className="px-8 py-8 flex flex-col gap-5">
+        <motion.div
+            className="px-8 py-8 flex flex-col gap-5"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.5 }}
+        >
             <div className="flex items-center justify-between">
-                <h3 className="text-3xl font-bold">Currently Live</h3>
-                <div className="text-sm text-gray-400">
+                <motion.h3
+                    className="text-3xl font-bold"
+                    initial={{ y: -10, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    transition={{ duration: 0.4 }}
+                >
+                    Currently Live
+                </motion.h3>
+                <motion.div
+                    className="text-sm text-gray-400"
+                    initial={{ y: -10, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    transition={{ duration: 0.5, delay: 0.1 }}
+                >
                     {allStreamData.length} total streams
-                </div>
+                </motion.div>
             </div>
 
             {/* Filter Buttons */}
@@ -67,31 +82,43 @@ const ExploreLivePage = () => {
                     { name: "All", key: "all" as FilterType, count: allStreamData.length },
                     { name: "Live", key: "live" as FilterType, count: liveCount },
                     { name: "Ended", key: "ended" as FilterType, count: endedCount }
-                ].map((type) => (
-                    <button
+                ].map((type, i) => (
+                    <motion.button
                         key={type.key}
+                        whileTap={{ scale: 0.9 }}
+                        whileHover={{ scale: 1.05 }}
+                        transition={{ type: "spring", stiffness: 300 }}
                         onClick={() => setActiveFilter(type.key)}
                         className={`px-4 py-2 rounded-full text-xs font-medium transition-colors border ${activeFilter === type.key
-                                ? "bg-primary text-white border-primary"
-                                : "bg-muted/50 hover:bg-primary/30 text-muted-foreground hover:text-primary border-border hover:border-primary/50"
+                            ? "bg-primary text-white border-primary shadow-lg shadow-primary/30"
+                            : "bg-muted/50 hover:bg-primary/30 text-muted-foreground hover:text-primary border-border hover:border-primary/50"
                             }`}
                     >
                         {type.name} ({type.count})
-                    </button>
+                    </motion.button>
                 ))}
             </div>
 
             {/* Loading State */}
             {isLoading && (
-                <div className="flex flex-col items-center justify-center py-20 gap-4">
+                <motion.div
+                    className="flex flex-col items-center justify-center py-20 gap-4"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                >
                     <Loader2 className="w-8 h-8 animate-spin text-primary" />
                     <p className="text-gray-400">Loading streams...</p>
-                </div>
+                </motion.div>
             )}
 
             {/* Empty State */}
             {!isLoading && filteredStreams.length === 0 && (
-                <div className="flex flex-col items-center justify-center py-20 gap-4">
+                <motion.div
+                    className="flex flex-col items-center justify-center py-20 gap-4"
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.4 }}
+                >
                     <div className="w-16 h-16 rounded-full bg-muted/50 flex items-center justify-center">
                         <svg
                             className="w-8 h-8 text-gray-400"
@@ -115,28 +142,41 @@ const ExploreLivePage = () => {
                             {activeFilter === "all" && "No streams available yet."}
                         </p>
                     </div>
-                </div>
+                </motion.div>
             )}
 
             {/* Stream Grid */}
             {!isLoading && filteredStreams.length > 0 && (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {filteredStreams.map((stream: any, index: number) => (
-                        <LiveStreamCard
-                            key={stream.stream_id || index}
-                            title={stream.name || "Untitled Stream"}
-                            owner={stream.owner || "Unknown"}
-                            category={stream.categories?.[0] || "Gaming"}
-                            viewers={0}
-                            thumbnail={"/default-thumbnail.jpeg"}
-                            isLive={stream.is_active}
-                            streamId={stream.stream_id}
-                            playbackId={stream.playback_id}
-                        />
-                    ))}
-                </div>
+                <motion.div
+                    layout
+                    className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+                >
+                    <AnimatePresence>
+                        {filteredStreams.map((stream: any, index: number) => (
+                            <motion.div
+                                key={stream.stream_id || index}
+                                layout
+                                initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                                animate={{ opacity: 1, y: 0, scale: 1 }}
+                                exit={{ opacity: 0, y: 20, scale: 0.95 }}
+                                transition={{ duration: 0.4, delay: index * 0.05 }}
+                            >
+                                <LiveStreamCard
+                                    title={stream.name || "Untitled Stream"}
+                                    owner={stream.owner || "Unknown"}
+                                    category={stream.categories?.[0] || "Gaming"}
+                                    viewers={0}
+                                    thumbnail={"/default-thumbnail.jpeg"}
+                                    isLive={stream.is_active}
+                                    streamId={stream.stream_id}
+                                    playbackId={stream.playback_id}
+                                />
+                            </motion.div>
+                        ))}
+                    </AnimatePresence>
+                </motion.div>
             )}
-        </div>
+        </motion.div>
     );
 }
 

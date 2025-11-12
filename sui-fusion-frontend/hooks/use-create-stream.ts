@@ -103,7 +103,7 @@ export const useStreamHooks = () => {
         arguments: [
           tx.object(process.env.NEXT_PUBLIC_STREAM_REGISTRY_ID!),
           tx.pure.string(streamId),
-        ],
+        ],  
       });
 
       tx.setGasBudget(100000000); // adjust for heavier stream data

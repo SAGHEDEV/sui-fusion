@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useCurrentAccount, useDisconnectWallet } from "@mysten/dapp-kit";
 import { Search, Bell, Settings, Menu, LogOut } from "lucide-react";
 import {
@@ -25,9 +25,17 @@ export default function TopBar() {
   const { mutate: disconnect } = useDisconnectWallet();
   const [openConnect, setOpenConnect] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [user, setUser] = useState<string | { name: string }>("");
 
-  const user =
-    JSON.parse(localStorage.getItem("suifusion_profile")!) || "Guest";
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("suifusion_profile");
+      if (saved) setUser(JSON.parse(saved));
+    }
+  }, []);
+
+  // normalized display name to avoid accessing `.name` on a string union
+  const displayName = typeof user === "string" ? user : user?.name || "";
 
   const shortAddr = (addr?: string) =>
     addr ? `${addr.slice(0, 6)}...${addr.slice(-4)}` : "";
@@ -65,14 +73,14 @@ export default function TopBar() {
 
               {/* User info bottom section */}
               {currentAccount && (
-                <div className="border-t border-border p-4 bg-background flex flex-col gap-3">
-                  <div className="flex items-center gap-2">
+                <div className="border-t border-border p-4 flex flex-col gap-4">
+                  <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full bg-primary/30 flex items-center justify-center text-sm font-bold">
-                      {(user.name || user).slice(0, 2).toUpperCase()}
+                      {displayName.slice(0, 2).toUpperCase()}
                     </div>
                     <div>
                       <p className="text-sm font-semibold">
-                        {user.name || user}
+                        {displayName}
                       </p>
                       <p className="text-xs text-muted-foreground">
                         {shortAddr(currentAccount.address)}
@@ -132,29 +140,29 @@ export default function TopBar() {
           </div>
 
           {/* Profile Popover */}
-          <Popover >
+          <Popover>
             <PopoverTrigger asChild>
-              <button className="w-8 h-8 rounded-full bg-linear-to-br from-primary to-secondary flex items-center justify-center cursor-pointer">
+              <button className="w-10 h-10 rounded-full bg-primary/30 flex items-center justify-center text-sm font-bold hover:bg-primary/40 transition-colors cursor-pointer">
                 <span className="text-white text-xs font-bold">
-                  {(user.name || user).slice(0, 2).toUpperCase()}
+                  {displayName.slice(0, 2).toUpperCase()}
                 </span>
               </button>
             </PopoverTrigger>
-            <PopoverContent className="w-64 p-4 border-blue-500 backdrop-blur-2xl" align="end">
-              <div className="flex items-center gap-3 border-b border-border pb-3 mb-3">
+            <PopoverContent className="w-56 p-0">
+              <div className="flex items-center gap-3 p-4 border-b border-border">
                 <div className="w-10 h-10 rounded-full bg-primary/30 flex items-center justify-center text-sm font-bold">
-                  {(user.name || user).slice(0, 2).toUpperCase()}{" "}
+                  {displayName.slice(0, 2).toUpperCase()}
                 </div>
                 <div>
-                  <p className="text-sm font-semibold">{user.name || user}</p>
+                  <p className="text-sm font-semibold">{displayName}</p>
                   <p className="text-xs text-muted-foreground">
-                    {shortAddr(currentAccount.address)}
+                    {shortAddr(currentAccount?.address)}
                   </p>
                 </div>
               </div>
               <Button
                 variant="destructive"
-                className="w-full"
+                className="w-full rounded-none"
                 onClick={() => disconnect()}
               >
                 <LogOut size={16} className="mr-2" />
