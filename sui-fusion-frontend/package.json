@@ -12,6 +12,7 @@
     "@hookform/resolvers": "^3.10.0",
     "@livepeer/react": "^4.3.6",
     "@mysten/dapp-kit": "^0.19.8",
+    "@mysten/enoki": "^0.12.10",
     "@mysten/sui": "^1.44.0",
     "@mysten/suins": "^0.9.9",
     "@radix-ui/react-accordion": "1.2.2",

@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { Send, Users, Loader2, VideoOff, Home } from "lucide-react";
 import { useSuiClient, useSuiClientQuery } from "@mysten/dapp-kit";
-import { db } from "@/lib/firebase"; // ✅ import your firebase instance
+import { db } from "@/lib/firebase";
 import {
   collection,
   query,
@@ -19,6 +19,7 @@ import {
   serverTimestamp,
 } from "firebase/firestore";
 import TipStreamerModal from "@/components/tip-streamer-modal";
+import { motion, AnimatePresence } from "framer-motion"; // ✅ Added for animations
 
 export default function WatchStreamPage() {
   const { playbackId } = useParams();
@@ -43,11 +44,9 @@ export default function WatchStreamPage() {
     { enabled: !!process.env.NEXT_PUBLIC_STREAM_REGISTRY_TABLE_ID }
   );
 
-  /** ✅ Fetch Stream Info from On-chain (Sui) */
   useEffect(() => {
     const fetchStream = async () => {
       if (!fields?.data || !playbackId) return;
-
       setIsLoading(true);
       try {
         for (const f of fields.data) {
@@ -79,7 +78,6 @@ export default function WatchStreamPage() {
     fetchStream();
   }, [fields, playbackId, suiClient]);
 
-  /** ✅ Fetch Messages from Firebase using chatId from streamInfo */
   useEffect(() => {
     if (!streamInfo?.chat_id) return;
 
@@ -95,7 +93,6 @@ export default function WatchStreamPage() {
     return () => unsub();
   }, [streamInfo?.chat_id]);
 
-  /** ✅ Fake viewer count fluctuation */
   useEffect(() => {
     const interval = setInterval(() => {
       setViewerCount((prev) =>
@@ -111,7 +108,6 @@ export default function WatchStreamPage() {
   const user =
     JSON.parse(localStorage.getItem("suifusion_profile")!) || "Guest";
 
-  /** ✅ Send message (local simulation for now) */
   const sendMessage = async () => {
     if (!message.trim()) return;
     if (streamEnded) {
@@ -133,27 +129,48 @@ export default function WatchStreamPage() {
       toast.error("Failed to send message");
     }
   };
-  /** ✅ Loading UI */
+
   if (isLoading || suiLoading) {
     return (
-      <div className="flex items-center justify-center w-full h-screen bg-black text-white">
-        <div className="flex flex-col items-center gap-4">
+      <motion.div
+        className="flex items-center justify-center w-full h-screen bg-black text-white"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+      >
+        <motion.div
+          className="flex flex-col items-center gap-4"
+          animate={{ y: [10, 0, 10] }}
+          transition={{ repeat: Infinity, duration: 2 }}
+        >
           <Loader2 className="w-8 h-8 animate-spin text-primary" />
           <p className="text-gray-400">Loading stream...</p>
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
     );
   }
 
-  /** ✅ No Stream Found UI */
   if (!streamInfo) {
     return (
-      <div className="flex items-center justify-center w-full h-screen bg-black text-white">
+      <motion.div
+        className="flex items-center justify-center w-full h-screen bg-black text-white"
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+      >
         <div className="text-center">
-          <h2 className="text-2xl font-bold mb-2">Stream Not Found</h2>
-          <p className="text-gray-400">
+          <motion.h2
+            className="text-2xl font-bold mb-2"
+            initial={{ y: -10, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+          >
+            Stream Not Found
+          </motion.h2>
+          <motion.p
+            className="text-gray-400"
+            initial={{ y: 10, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+          >
             This stream may have ended or doesn’t exist.
-          </p>
+          </motion.p>
           <Button
             onClick={() => router.push("/")}
             className="mt-4 bg-primary hover:bg-primary/90"
@@ -162,38 +179,64 @@ export default function WatchStreamPage() {
             Go Home
           </Button>
         </div>
-      </div>
+      </motion.div>
     );
   }
 
-  /** ✅ Main Player UI */
   return (
-    <div className="flex flex-1 h-full flex-col lg:flex-row w-full bg-black text-white relative">
+    <motion.div
+      className="flex flex-1 h-full flex-col lg:flex-row w-full bg-black text-white relative overflow-hidden"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.5 }}
+    >
       {/* 🎥 Stream Ended Overlay */}
-      {streamEnded && (
-        <div className="absolute inset-0 bg-black/95 backdrop-blur-lg z-50 flex flex-col items-center justify-center">
-          <div className="text-center space-y-6 max-w-md px-6">
-            <div className="w-24 h-24 mx-auto rounded-full bg-gray-700 flex items-center justify-center">
-              <VideoOff size={48} />
-            </div>
-            <h2 className="text-3xl font-bold text-white">Stream Ended</h2>
-            <p className="text-gray-400">
-              Thanks for watching! The broadcaster has ended this stream.
-            </p>
-            <Button
-              onClick={() => router.push("/")}
-              className="bg-primary hover:bg-primary/90 mt-4"
+      <AnimatePresence>
+        {streamEnded && (
+          <motion.div
+            className="absolute inset-0 bg-black/95 backdrop-blur-lg z-50 flex flex-col items-center justify-center"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <motion.div
+              className="text-center space-y-6 max-w-md px-6"
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
             >
-              <Home size={16} className="mr-2" />
-              Browse Streams
-            </Button>
-          </div>
-        </div>
-      )}
+              <motion.div
+                className="w-24 h-24 mx-auto rounded-full bg-gray-700 flex items-center justify-center"
+                animate={{ rotate: [0, 5, -5, 0] }}
+                transition={{ duration: 2, repeat: Infinity }}
+              >
+                <VideoOff size={48} />
+              </motion.div>
+              <h2 className="text-3xl font-bold text-white">Stream Ended</h2>
+              <p className="text-gray-400">
+                Thanks for watching! The broadcaster has ended this stream.
+              </p>
+              <Button
+                onClick={() => router.push("/")}
+                className="bg-primary hover:bg-primary/90 mt-4"
+              >
+                <Home size={16} className="mr-2" />
+                Browse Streams
+              </Button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* 🎬 Player */}
-      <div className="lg:flex-1 flex flex-col p-4 overflow-y-auto">
-        <div className="w-full aspect-video rounded-lg overflow-hidden border border-gray-800 bg-black">
+      <motion.div
+        className="lg:flex-1 flex flex-col p-4 overflow-y-auto"
+        initial={{ y: 10, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+      >
+        <motion.div
+          className="w-full h-full aspect-video rounded-lg overflow-hidden border border-gray-800 bg-black"
+          whileHover={{ scale: 1.01 }}
+        >
           <Player.Root
             src={getSrc({
               type: "hls",
@@ -213,7 +256,11 @@ export default function WatchStreamPage() {
                 matcher="all"
                 className="absolute inset-0 flex items-center justify-center bg-black/90"
               >
-                <div className="text-center p-6">
+                <motion.div
+                  className="text-center p-6"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                >
                   <p className="text-red-500 font-semibold mb-2">
                     Stream Unavailable
                   </p>
@@ -226,14 +273,18 @@ export default function WatchStreamPage() {
                   >
                     Refresh
                   </Button>
-                </div>
+                </motion.div>
               </Player.ErrorIndicator>
             </Player.Container>
           </Player.Root>
-        </div>
+        </motion.div>
 
         {/* Stream Info */}
-        <div className="mt-4 flex justify-between">
+        <motion.div
+          className="mt-4 flex justify-between"
+          initial={{ opacity: 0, y: 5 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
           <div>
             <h2 className="text-2xl font-bold">
               {streamInfo?.name || "Live Stream"}
@@ -247,72 +298,99 @@ export default function WatchStreamPage() {
               </span>
               <div className="flex items-center gap-2 text-gray-400">
                 <Users size={16} />
-                <span>{viewerCount} watching</span>
+                <motion.span
+                  key={viewerCount}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  {viewerCount} watching
+                </motion.span>
               </div>
             </div>
           </div>
-          <Button className="bg-primary hover:bg-primary/90" onClick={() => setOpenTipStreamer(true)}>
+          <Button
+            className="bg-primary hover:bg-primary/90"
+            onClick={() => setOpenTipStreamer(true)}
+          >
             Tip Streamer
           </Button>
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
 
       {/* 💬 Chat */}
-      <div className="w-full lg:w-[350px] bg-gray-900/50 border-l border-gray-800 flex flex-col h-full">
+      <div className="p-4 lg:p-0 rounded-xl overflow-hidden">
+      <motion.div
+        className="w-full lg:w-[350px] bg-gray-900/50 border-l border-gray-800 flex flex-col min-h-screen lg:min-h-[600px] h-screen lg:h-full"
+        initial={{ x: 30, opacity: 0 }}
+        animate={{ x: 0, opacity: 1 }}
+        transition={{ duration: 0.6 }}
+      >
         <div className="p-4 border-b border-gray-700">
           <h3 className="text-lg font-semibold">Live Chat</h3>
-          <p className="text-xs text-gray-500 mt-1">
-            {messages.length} messages
-          </p>
+          <p className="text-xs text-gray-500 mt-1">{messages.length} messages</p>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4 space-y-3 max-h-[300px] lg:max-h-full overflow-auto">
-          {messages.length > 0 ? (
-            messages.map((msg) => (
-              <div key={msg.id} className="flex items-start gap-2">
-                <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-xs font-bold">
-                  {msg.user?.[0] || "?"}
-                </div>
-                <div className="flex-1 bg-gray-800/50 p-2.5 rounded-lg">
-                  <p className="text-xs font-semibold text-primary">
-                    {msg.user}
-                  </p>
-                  <p className="text-sm text-gray-200 mt-0.5">{msg.text}</p>
-                </div>
-              </div>
-            ))
-          ) : (
-            <p className="text-gray-500 text-sm text-center mt-8">
-              No messages yet.
+        <div className="flex-1 overflow-y-auto p-4 space-y-3 flex flex-col">
+          <div className="flex flex-col gap-3">
+        {messages.length > 0 ? (
+          messages.map((msg) => (
+            <motion.div
+          key={msg.id}
+          className="flex items-start gap-2"
+          initial={{ opacity: 0, y: 5 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
+            >
+          <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-xs font-bold">
+            {msg.user?.[0] || "?"}
+          </div>
+          <div className="flex-1 bg-gray-800/50 p-2.5 rounded-lg">
+            <p className="text-xs font-semibold text-primary">
+              {msg.user}
             </p>
-          )}
+            <p className="text-sm text-gray-200 mt-0.5">{msg.text}</p>
+          </div>
+            </motion.div>
+          ))
+        ) : (
+          <p className="text-gray-500 text-sm text-center mt-8">
+            No messages yet.
+          </p>
+        )}
+          </div>
         </div>
 
         <div className="p-4 border-t border-gray-700">
           <div className="flex items-center gap-2">
-            <Input
-              placeholder={streamEnded ? "Stream ended" : "Say something..."}
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && sendMessage()}
-              disabled={streamEnded}
-              className="flex-1 bg-gray-800/50 border-gray-700 text-white"
-            />
-            <Button
-              onClick={sendMessage}
-              disabled={!message.trim() || streamEnded}
-              className="bg-primary hover:bg-primary/90 text-white"
-            >
-              <Send size={16} />
-            </Button>
+        <Input
+          placeholder={streamEnded ? "Stream ended" : "Say something..."}
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+          disabled={streamEnded}
+          className="flex-1 bg-gray-800/50 border-gray-700 text-white"
+        />
+        <motion.div whileTap={{ scale: 0.9 }}>
+          <Button
+            onClick={sendMessage}
+            disabled={!message.trim() || streamEnded}
+            className="bg-primary hover:bg-primary/90 text-white"
+          >
+            <Send size={16} />
+          </Button>
+        </motion.div>
           </div>
           <p className="text-xs text-gray-500 mt-2 text-center">
-            {streamEnded
-              ? "Chat disabled"
-              : `Chat as Guest_${Math.floor(Math.random() * 1000)}`}
+        {streamEnded
+          ? "Chat disabled"
+          : `Chat as ${user.name}`}
           </p>
         </div>
+      </motion.div>
       </div>
+
       <TipStreamerModal
         streamId={streamInfo.stream_id}
         streamerAddress={streamInfo.owner}
@@ -320,6 +398,6 @@ export default function WatchStreamPage() {
         open={openTipStreamer}
         setOpen={setOpenTipStreamer}
       />
-    </div>
+    </motion.div>
   );
 }

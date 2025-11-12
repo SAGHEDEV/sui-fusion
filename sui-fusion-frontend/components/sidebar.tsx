@@ -8,10 +8,15 @@ import { useCurrentAccount } from "@mysten/dapp-kit";
 import { useState } from "react";
 import Image from "next/image";
 
-const SidebarItem = ({ icon: Icon, label, href }: { icon: any; label: string; href: string }) => {
+const SidebarItem = ({ icon: Icon, label, href, isMobile, setOpen }: { icon: any; label: string; href: string, isMobile?: boolean, setOpen: (open: boolean) => void }) => {
   const active = usePathname() === href;
   return (
     <Link href={href}
+      onClick={() => {
+        if (isMobile) {
+          setOpen(false)
+        }
+      }}
       className={`flex items-center gap-3 px-4 py-3 rounded-lg cursor-pointer transition-colors ${active ? "bg-primary/20 text-primary" : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
         }`}
     >
@@ -34,16 +39,15 @@ const UserItem = ({ name, initials }: { name: string; initials: string }) => (
   </div>
 )
 
-export default function Sidebar({ isMobile = false }: { isMobile?: boolean }) {
+export default function Sidebar({ isMobile = false, setOpen }: { isMobile?: boolean, setOpen?: (open: boolean) => void }) {
 
   const router = useRouter()
   const currentAccount = useCurrentAccount()
   const [openConnect, setOpenConnect] = useState(false)
   return (
-     <div
-      className={`${
-        isMobile ? "w-full" : "w-64 border-r border-border hidden lg:flex"
-      } bg-card flex flex-col overflow-y-auto`}
+    <div
+      className={`${isMobile ? "w-full" : "w-64 border-r border-border hidden lg:flex"
+        } bg-card flex flex-col overflow-y-auto`}
     >
       {/* Header */}
       <div className="p-4 border-b border-border flex items-center justify-between">
@@ -64,10 +68,10 @@ export default function Sidebar({ isMobile = false }: { isMobile?: boolean }) {
 
       {/* Navigation */}
       <nav className="p-3 space-y-1 border-b border-border">
-        <SidebarItem icon={Home} label="Home" href="/" />
-        <SidebarItem icon={VideoIcon} label="Explore Live" href="/explore" />
-        <SidebarItem icon={TrendingUp} label="Trending" href="/trending" />
-        <SidebarItem icon={Gamepad2} label="Games" href="/games" />
+        <SidebarItem isMobile={isMobile} setOpen={setOpen!} icon={Home} label="Home" href="/" />
+        <SidebarItem isMobile={isMobile} setOpen={setOpen!} icon={VideoIcon} label="Explore Live" href="/explore" />
+        <SidebarItem isMobile={isMobile} setOpen={setOpen!} icon={TrendingUp} label="Trending" href="/trending" />
+        <SidebarItem isMobile={isMobile} setOpen={setOpen!} icon={Gamepad2} label="Games" href="/games" />
         {/* <SidebarItem icon={Music} label="Music" /> */}
         {/* <SidebarItem icon={Palette} label="Creators" /> */}
       </nav>

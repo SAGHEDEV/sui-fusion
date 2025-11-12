@@ -25,7 +25,9 @@ export default function TopBar() {
   const { mutate: disconnect } = useDisconnectWallet();
   const [openConnect, setOpenConnect] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [user, setUser] = useState<string | { name: string }>("");
+  const [user, setUser] = useState<
+    string | { name: string; avatar_url: string }
+  >("");
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -36,6 +38,7 @@ export default function TopBar() {
 
   // normalized display name to avoid accessing `.name` on a string union
   const displayName = typeof user === "string" ? user : user?.name || "";
+  const avatar = typeof user === "string" ? user : user?.avatar_url || "";
 
   const shortAddr = (addr?: string) =>
     addr ? `${addr.slice(0, 6)}...${addr.slice(-4)}` : "";
@@ -46,7 +49,7 @@ export default function TopBar() {
       <div className="flex items-center gap-4">
         {/* Hamburger for mobile */}
         <div className="lg:hidden flex items-center gap-4">
-          <Drawer open={drawerOpen} onOpenChange={setDrawerOpen} >
+          <Drawer open={drawerOpen} onOpenChange={setDrawerOpen}>
             <DrawerTrigger asChild>
               <Button variant="ghost" size="icon">
                 <Menu size={20} />
@@ -68,20 +71,28 @@ export default function TopBar() {
 
               {/* Sidebar content inside drawer */}
               <div className="h-[85vh] overflow-y-auto">
-                <Sidebar isMobile />
+                <Sidebar isMobile setOpen={setDrawerOpen} />
               </div>
 
               {/* User info bottom section */}
               {currentAccount && (
                 <div className="border-t border-border p-4 flex flex-col gap-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-primary/30 flex items-center justify-center text-sm font-bold">
-                      {displayName.slice(0, 2).toUpperCase()}
-                    </div>
+                    {avatar ? (
+                      <Image
+                        src={avatar}
+                        alt={displayName}
+                        className="w-10 h-10 rounded-full"
+                        width={40}
+                        height={40}
+                      />
+                    ) : (
+                      <div className="w-10 h-10 rounded-full bg-primary/30 flex items-center justify-center text-sm font-bold">
+                        {displayName.slice(0, 2).toUpperCase()}
+                      </div>
+                    )}
                     <div>
-                      <p className="text-sm font-semibold">
-                        {displayName}
-                      </p>
+                      <p className="text-sm font-semibold">{displayName}</p>
                       <p className="text-xs text-muted-foreground">
                         {shortAddr(currentAccount.address)}
                       </p>
@@ -142,17 +153,35 @@ export default function TopBar() {
           {/* Profile Popover */}
           <Popover>
             <PopoverTrigger asChild>
-              <button className="w-10 h-10 rounded-full bg-primary/30 flex items-center justify-center text-sm font-bold hover:bg-primary/40 transition-colors cursor-pointer">
-                <span className="text-white text-xs font-bold">
-                  {displayName.slice(0, 2).toUpperCase()}
-                </span>
-              </button>
-            </PopoverTrigger>
-            <PopoverContent className="w-56 p-0">
-              <div className="flex items-center gap-3 p-4 border-b border-border">
+              {avatar ? (
+                <Image
+                  src={avatar}
+                  alt={displayName}
+                  className="w-10 h-10 rounded-full"
+                  width={40}
+                  height={40}
+                />
+              ) : (
                 <div className="w-10 h-10 rounded-full bg-primary/30 flex items-center justify-center text-sm font-bold">
                   {displayName.slice(0, 2).toUpperCase()}
                 </div>
+              )}
+            </PopoverTrigger>
+            <PopoverContent className="w-62 p-4 mr-5">
+              <div className="flex items-center gap-3 p-4 border-b border-border">
+                {avatar ? (
+                  <Image
+                    src={avatar}
+                    alt={displayName}
+                    className="w-10 h-10 rounded-full"
+                    width={40}
+                    height={40}
+                  />
+                ) : (
+                  <div className="w-10 h-10 rounded-full bg-primary/30 flex items-center justify-center text-sm font-bold">
+                    {displayName.slice(0, 2).toUpperCase()}
+                  </div>
+                )}
                 <div>
                   <p className="text-sm font-semibold">{displayName}</p>
                   <p className="text-xs text-muted-foreground">
@@ -162,7 +191,7 @@ export default function TopBar() {
               </div>
               <Button
                 variant="destructive"
-                className="w-full rounded-none"
+                className="w-full"
                 onClick={() => disconnect()}
               >
                 <LogOut size={16} className="mr-2" />

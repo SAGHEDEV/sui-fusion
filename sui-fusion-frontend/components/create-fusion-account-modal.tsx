@@ -20,6 +20,7 @@ import { toast } from "sonner";
 import { useCurrentAccount } from "@mysten/dapp-kit";
 import { useGetNsFromAddress } from "@/hooks/useGetAddressFromNs";
 import { useCreateProfile } from "@/hooks/use-create-profile";
+import { useUploadThumbnail } from "@/hooks/use-upload-thumbnail";
 
 const fusionAccountSchema = z.object({
     username: z
@@ -41,8 +42,9 @@ interface CreateFusionAccountProps {
 function CreateFusionAccount({ open, setOpen }: CreateFusionAccountProps) {
     const [preview, setPreview] = useState<string | null>(null);
     const currentAccount = useCurrentAccount();
-    const { handleCreateProfile } = useCreateProfile()
-
+    const { handleCreateProfile } = useCreateProfile();
+    const [profileFile, setProfileFile] = useState<File | null>(null);
+    const { mutateAsync: uploadThumbnail, isPending: isUploading } = useUploadThumbnail();
 
     const { data: suinsData, isLoading } = useGetNsFromAddress(
         currentAccount?.address || "",
@@ -79,24 +81,58 @@ function CreateFusionAccount({ open, setOpen }: CreateFusionAccountProps) {
         }
     }, [currentAccount?.address, suinsData, form]);
 
-    const onSubmit = async (values: FusionAccountData) => {
-        await handleCreateProfile.mutateAsync({
-            name: values.username,
-            avatarUrl: preview || "",
-        }, {
-            onSuccess: () => {
-                setOpen(false);
-            }
-        });
-
-    };
-
-
     const handleAvatarChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (file) {
-            form.setValue("avatar", file);
-            setPreview(URL.createObjectURL(file));
+            // Validate file size (5MB)
+            if (file.size > 5 * 1024 * 1024) {
+                toast.error("Image size should be less than 5MB");
+                return;
+            }
+            // Validate file type
+            if (!file.type.startsWith("image/")) {
+                toast.error("Please upload a valid image file");
+                return;
+            }
+            const url = URL.createObjectURL(file);
+            setPreview(url);
+            setProfileFile(file);
+        }
+    };
+
+    const onSubmit = async (values: FusionAccountData) => {
+        let thumbnailUrl: string | null = null;
+        try {
+
+            thumbnailUrl = await uploadThumbnail({ file: profileFile as File, storagePath: "profiles" });
+            if (!thumbnailUrl) {
+                toast.error("Failed to upload thumbnail");
+                return;
+            }
+            await handleCreateProfile.mutateAsync({
+                name: values.username,
+                avatarUrl: thumbnailUrl || "",
+            }, {
+                onSuccess: () => {
+                    setOpen(false);
+                    localStorage.setItem(
+                        "suifusion_profile",
+                        JSON.stringify({
+                            address: currentAccount?.address,
+                            name: values?.username,
+                            avatar_url: thumbnailUrl as string,
+                            created_at: new Date().toISOString(),
+                        })
+                    );
+                }
+            }).finally(() => {
+                form.reset();
+                setPreview(null);
+                setOpen(false);
+            },);
+        } catch (err: any) {
+            console.error(err);
+            toast.error("Error creating stream: " + err.message);
         }
     };
 

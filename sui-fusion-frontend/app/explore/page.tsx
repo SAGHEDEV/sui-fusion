@@ -50,6 +50,8 @@ const ExploreLivePage = () => {
 
     const isLoading = isLoadingFields || isLoadingStreams;
 
+    console.log(filteredStreams);
+
     return (
         <motion.div
             className="px-8 py-8 flex flex-col gap-5"
@@ -166,7 +168,7 @@ const ExploreLivePage = () => {
                                     owner={stream.owner || "Unknown"}
                                     category={stream.categories?.[0] || "Gaming"}
                                     viewers={0}
-                                    thumbnail={"/default-thumbnail.jpeg"}
+                                    thumbnail={stream.thumbnail_url || "/default-thumbnail.jpeg"}
                                     isLive={stream.is_active}
                                     streamId={stream.stream_id}
                                     playbackId={stream.playback_id}

@@ -43,6 +43,7 @@ export const useStreamHooks = () => {
       categories,
       streamId,
       streamKey,
+      thumbnailUrl
     }: {
       name: string;
       description: string;
@@ -52,6 +53,7 @@ export const useStreamHooks = () => {
       chatId: string;
       categories: string[];
       streamKey: string;
+      thumbnailUrl?: string;
     }) => {
       const tx = new Transaction();
 
@@ -61,6 +63,7 @@ export const useStreamHooks = () => {
           tx.object(process.env.NEXT_PUBLIC_STREAM_REGISTRY_ID!),
           tx.pure.string(name),
           tx.pure.string(description),
+          tx.pure.string(thumbnailUrl || ""),
           tx.pure.string(playbackId),
           tx.pure.string(playbackUrl),
           tx.pure.string(streamId),
