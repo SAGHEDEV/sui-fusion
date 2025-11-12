@@ -4,6 +4,7 @@ import { useCurrentAccount } from "@mysten/dapp-kit";
 import { Heart, MessageCircle } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
+import { useViewerCount } from "@/hooks/use-viewer-count";
 
 interface LiveStreamCardProps {
   title: string;
@@ -16,10 +17,20 @@ interface LiveStreamCardProps {
   owner: string;
 }
 
+export function LiveStreamCardWithViewers(props: LiveStreamCardProps) {
+  const viewerCount = useViewerCount(props.streamId);
+
+  return (
+    <LiveStreamCard
+      {...props}
+      viewers={viewerCount}
+    />
+  );
+}
+
 const LiveStreamCard = ({
   title,
   category,
-  viewers,
   thumbnail,
   owner,
   streamId,
@@ -28,6 +39,7 @@ const LiveStreamCard = ({
 }: LiveStreamCardProps) => {
   const currentAccount = useCurrentAccount();
   const { profileData, isCheckingProfile } = useProfile({ address: owner });
+  const viewerCount = useViewerCount(streamId);
   return (
     <motion.div
       whileHover={{ scale: 1.03 }}
@@ -62,7 +74,7 @@ const LiveStreamCard = ({
         {/* Viewers Count */}
         <div className="absolute bottom-0 left-0 right-0 bg-linear-to-t from-black to-transparent p-2">
           <p className="text-xs text-muted-foreground p-2 rounded-sm bg-primary/40 w-fit">
-            {viewers.toLocaleString()} viewers
+            {viewerCount.toLocaleString()} {isLive ? "viewers" : "Joined"}
           </p>
         </div>
       </div>

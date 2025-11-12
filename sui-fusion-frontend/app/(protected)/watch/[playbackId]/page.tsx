@@ -20,6 +20,7 @@ import {
 } from "firebase/firestore";
 import TipStreamerModal from "@/components/tip-streamer-modal";
 import { motion, AnimatePresence } from "framer-motion"; // ✅ Added for animations
+import { useViewerCount } from "@/hooks/use-viewer-count";
 
 export default function WatchStreamPage() {
   const { playbackId } = useParams();
@@ -29,10 +30,10 @@ export default function WatchStreamPage() {
   const [message, setMessage] = useState("");
   const [streamInfo, setStreamInfo] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [viewerCount, setViewerCount] = useState(0);
   const [streamEnded, setStreamEnded] = useState(false);
   const [isStreamActive, setIsStreamActive] = useState(true);
   const [openTipStreamer, setOpenTipStreamer] = useState(false);
+  const viewerCount = useViewerCount(streamInfo?.stream_id || "")
 
   const suiClient = useSuiClient();
 
@@ -93,17 +94,6 @@ export default function WatchStreamPage() {
     return () => unsub();
   }, [streamInfo?.chat_id]);
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setViewerCount((prev) =>
-        isStreamActive
-          ? Math.max(10, prev + Math.floor(Math.random() * 10) - 5)
-          : Math.max(0, prev - Math.floor(Math.random() * 15))
-      );
-    }, 8000);
-
-    return () => clearInterval(interval);
-  }, [isStreamActive]);
 
   const user =
     JSON.parse(localStorage.getItem("suifusion_profile")!) || "Guest";

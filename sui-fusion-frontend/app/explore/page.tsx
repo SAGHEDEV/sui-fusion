@@ -1,6 +1,6 @@
 'use client'
 
-import LiveStreamCard from '@/components/miscellaneous/live-stream-card'
+import { LiveStreamCardWithViewers } from '@/components/miscellaneous/live-stream-card'
 import { useSuiClientQuery } from '@mysten/dapp-kit';
 import { useState, useMemo } from 'react'
 import { Loader2 } from 'lucide-react';
@@ -163,7 +163,7 @@ const ExploreLivePage = () => {
                                 exit={{ opacity: 0, y: 20, scale: 0.95 }}
                                 transition={{ duration: 0.4, delay: index * 0.05 }}
                             >
-                                <LiveStreamCard
+                                <LiveStreamCardWithViewers
                                     title={stream.name || "Untitled Stream"}
                                     owner={stream.owner || "Unknown"}
                                     category={stream.categories?.[0] || "Gaming"}

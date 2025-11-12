@@ -3,7 +3,7 @@
 import { useSuiClientQuery } from "@mysten/dapp-kit";
 import { motion, AnimatePresence } from "framer-motion";
 import { Loader2 } from "lucide-react";
-import LiveStreamCard from "./miscellaneous/live-stream-card";
+import { LiveStreamCardWithViewers } from "./miscellaneous/live-stream-card";
 
 export default function RecommendationSection() {
   const { data: dynamicFields, isLoading: isLoadingFields } = useSuiClientQuery(
@@ -121,7 +121,7 @@ export default function RecommendationSection() {
                 exit={{ opacity: 0, y: 20, scale: 0.95 }}
                 transition={{ duration: 0.4, delay: index * 0.05 }}
               >
-                <LiveStreamCard
+                <LiveStreamCardWithViewers
                   title={stream.name || "Untitled Stream"}
                   owner={stream.owner || "Unknown"}
                   category={stream.categories?.[0] || "Gaming"}

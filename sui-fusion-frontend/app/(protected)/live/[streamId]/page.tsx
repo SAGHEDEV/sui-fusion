@@ -32,10 +32,15 @@ import ShareStreamModal from "@/components/share-stream-modal";
 import { getIngest } from "@livepeer/react/external";
 import { useStreamHooks } from "@/hooks/use-create-stream";
 import TipCard from "@/components/miscellaneous/tip-card";
+import { useViewerCount } from "@/hooks/use-viewer-count";
 
-function BroadcastStatus({ __scopeBroadcast }: Broadcast.BroadcastScopedProps<{}>) {
+function BroadcastStatus({
+  __scopeBroadcast,
+}: Broadcast.BroadcastScopedProps<{}>) {
   const context = useBroadcastContext("BroadcastStatus", __scopeBroadcast);
-  const { status } = Broadcast.useStore(context.store, (s) => ({ status: s.status }));
+  const { status } = Broadcast.useStore(context.store, (s) => ({
+    status: s.status,
+  }));
 
   useEffect(() => {
     if (status === "live") toast.success("🎥 You're now LIVE!");
@@ -80,7 +85,12 @@ function EndStreamButton({
   };
 
   return (
-    <Button disabled={endStreamLoading} variant="destructive" size="sm" onClick={handleEndStream}>
+    <Button
+      disabled={endStreamLoading}
+      variant="destructive"
+      size="sm"
+      onClick={handleEndStream}
+    >
       {!endStreamLoading ? "End Stream" : "Ending stream..."}
     </Button>
   );
@@ -93,8 +103,12 @@ export default function BroadcastPage() {
   const [messages, setMessages] = useState<any[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [openShareStream, setOpenShareStream] = useState(false);
-
-  const { data: streamObject, isLoading, isError } = useSuiClientQuery(
+  const viewerCount = useViewerCount(streamId as string || "")
+  const {
+    data: streamObject,
+    isLoading,
+    isError,
+  } = useSuiClientQuery(
     "getDynamicFieldObject",
     {
       parentId: process.env.NEXT_PUBLIC_STREAM_REGISTRY_TABLE_ID!,
@@ -103,18 +117,24 @@ export default function BroadcastPage() {
     { enabled: !!streamId }
   );
 
-  const streamFields = streamObject?.data?.content as Extract<SuiParsedData, { dataType: "moveObject" }> | undefined;
+  const streamFields = streamObject?.data?.content as
+    | Extract<SuiParsedData, { dataType: "moveObject" }>
+    | undefined;
   const streamField = streamFields?.fields as any | undefined;
   const streamData = streamField?.value?.fields;
 
   useEffect(() => {
     if (!streamId) return;
-    const q = query(collection(db, "streams", streamId as string, "messages"), orderBy("timestamp", "asc"));
+    const q = query(
+      collection(db, "streams", streamId as string, "messages"),
+      orderBy("timestamp", "asc")
+    );
     const unsub = onSnapshot(q, (snapshot) => {
       setMessages(snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
     });
     return () => unsub();
   }, [streamId]);
+
 
   async function sendMessage(e: React.FormEvent) {
     e.preventDefault();
@@ -149,10 +169,7 @@ export default function BroadcastPage() {
 
   return (
     <>
-      <Broadcast.Root
-        ingestUrl={getIngest(streamData.stream_key)}
-        audio
-      >
+      <Broadcast.Root ingestUrl={getIngest(streamData.stream_key)} audio>
         <BroadcastStatus />
 
         {/* Main Section */}
@@ -172,7 +189,9 @@ export default function BroadcastPage() {
             <h1 className="font-bold text-lg flex items-center gap-2">
               🎬 {streamData.name}
               <Broadcast.EnabledIndicator matcher={true}>
-                <span className="text-green-500 text-sm animate-pulse">LIVE</span>
+                <span className="text-green-500 text-sm animate-pulse">
+                  LIVE
+                </span>
               </Broadcast.EnabledIndicator>
               <Broadcast.EnabledIndicator matcher={false}>
                 <span className="text-gray-500 text-sm">PREVIEW</span>
@@ -180,7 +199,14 @@ export default function BroadcastPage() {
             </h1>
 
             <motion.div className="flex gap-2" whileHover={{ scale: 1.03 }}>
-              <Button variant="outline" size="sm" onClick={() => setOpenShareStream(true)}>
+              <div className="px-4 py-2 rounded-md">
+                {viewerCount.toLocaleString()} viewers
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setOpenShareStream(true)}
+              >
                 <Share2 size={16} className="mr-1" /> Share
               </Button>
               <EndStreamButton
@@ -198,11 +224,18 @@ export default function BroadcastPage() {
             transition={{ duration: 0.6 }}
           >
             <Broadcast.Container className="relative max-h-[800px] h-full w-auto m-auto bg-blue-700/10 rounded-lg overflow-hidden flex items-center justify-center p-4 shadow-lg shadow-primary/10">
-              <Broadcast.Video className="w-auto h-full object-contain rounded-xl m-auto" width={1000} height={800} />
+              <Broadcast.Video
+                className="w-auto h-full object-contain rounded-xl m-auto"
+                width={1000}
+                height={800}
+              />
               <Broadcast.LoadingIndicator className="absolute inset-0 flex items-center justify-center bg-black/50">
                 Connecting...
               </Broadcast.LoadingIndicator>
-              <Broadcast.ErrorIndicator matcher="all" className="absolute inset-0 flex items-center justify-center bg-black/80 text-red-500">
+              <Broadcast.ErrorIndicator
+                matcher="all"
+                className="absolute inset-0 flex items-center justify-center bg-black/80 text-red-500"
+              >
                 Failed to connect. Please retry.
               </Broadcast.ErrorIndicator>
             </Broadcast.Container>
@@ -221,7 +254,11 @@ export default function BroadcastPage() {
               >
                 <div className="flex justify-between items-center mb-3">
                   <h3 className="font-semibold text-lg">Live Chat</h3>
-                  <Button variant="ghost" size="icon" onClick={() => setChatOpen(false)}>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setChatOpen(false)}
+                  >
                     <X size={18} />
                   </Button>
                 </div>
@@ -245,7 +282,9 @@ export default function BroadcastPage() {
                         transition={{ duration: 0.3 }}
                         className="text-sm bg-white/10 px-3 py-2 rounded-lg w-fit max-w-[90%]"
                       >
-                        <span className="font-semibold text-blue-300">{msg.user}: </span>
+                        <span className="font-semibold text-blue-300">
+                          {msg.user}:{" "}
+                        </span>
                         <span>{msg.text}</span>
                       </motion.div>
                     ))
@@ -277,8 +316,12 @@ export default function BroadcastPage() {
           >
             <Broadcast.EnabledTrigger>
               <Button className="bg-gray-700 hover:bg-gray-600 rounded-md flex items-center gap-2">
-                <Broadcast.EnabledIndicator matcher={false}>🎥 Go Live</Broadcast.EnabledIndicator>
-                <Broadcast.EnabledIndicator matcher={true}>⏹ Stop Live</Broadcast.EnabledIndicator>
+                <Broadcast.EnabledIndicator matcher={false}>
+                  🎥 Go Live
+                </Broadcast.EnabledIndicator>
+                <Broadcast.EnabledIndicator matcher={true}>
+                  ⏹ Stop Live
+                </Broadcast.EnabledIndicator>
               </Button>
             </Broadcast.EnabledTrigger>
 
@@ -300,7 +343,10 @@ export default function BroadcastPage() {
               </Broadcast.AudioEnabledIndicator>
             </Broadcast.AudioEnabledTrigger>
 
-            <button onClick={() => setChatOpen(!chatOpen)} className="p-2 bg-gray-700 hover:bg-gray-600 rounded-md">
+            <button
+              onClick={() => setChatOpen(!chatOpen)}
+              className="p-2 bg-gray-700 hover:bg-gray-600 rounded-md"
+            >
               <MessageCircle size={18} />
             </button>
 
@@ -333,7 +379,8 @@ export default function BroadcastPage() {
           {!streamData?.tips || streamData.tips.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-8 text-gray-400">
               <p className="text-sm">
-                No tips yet — your supporters are probably getting their SUI ready 👀
+                No tips yet — your supporters are probably getting their SUI
+                ready 👀
               </p>
             </div>
           ) : (
