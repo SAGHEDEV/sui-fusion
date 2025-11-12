@@ -1,8 +1,9 @@
-import { motion } from 'framer-motion';
-import { useProfile } from '@/hooks/use-profile';
-import { useCurrentAccount } from '@mysten/dapp-kit';
-import { Heart, MessageCircle } from 'lucide-react'
-import Link from 'next/link'
+import { motion } from "framer-motion";
+import { useProfile } from "@/hooks/use-profile";
+import { useCurrentAccount } from "@mysten/dapp-kit";
+import { Heart, MessageCircle } from "lucide-react";
+import Link from "next/link";
+import Image from "next/image";
 
 interface LiveStreamCardProps {
   title: string;
@@ -23,10 +24,10 @@ const LiveStreamCard = ({
   owner,
   streamId,
   isLive,
-  playbackId
+  playbackId,
 }: LiveStreamCardProps) => {
-  const currentAccount = useCurrentAccount()
-  const { profileData, isCheckingProfile } = useProfile({ address: owner })
+  const currentAccount = useCurrentAccount();
+  const { profileData, isCheckingProfile } = useProfile({ address: owner });
   return (
     <motion.div
       whileHover={{ scale: 1.03 }}
@@ -52,7 +53,9 @@ const LiveStreamCard = ({
           </div>
         ) : (
           <div className="absolute top-2 right-2 bg-gray-600 px-3 py-1 rounded">
-            <span className="text-white text-xs font-bold uppercase">ENDED</span>
+            <span className="text-white text-xs font-bold uppercase">
+              ENDED
+            </span>
           </div>
         )}
 
@@ -70,10 +73,24 @@ const LiveStreamCard = ({
 
         {/* Channel and Action */}
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-full bg-primary/30 shrink-0"></div>
+          {profileData?.avatar_url ? (
+            <Image
+              src={profileData?.avatar_url}
+              alt={profileData?.name}
+              width={32}
+              height={32}
+              className="w-8 h-8 rounded-full object-cover"
+            />
+          ) : (
+            <div className="w-8 h-8 rounded-full bg-primary/30 shrink-0"></div>
+          )}
           <div className="flex-1 flex flex-row justify-between items-center min-w-0 gap-2">
             <div className="flex flex-col gap-1 min-w-0 flex-1">
-              <p className="text-xs font-medium truncate">{isCheckingProfile ? "Loading..." : profileData?.name || "Streamer"}</p>
+              <p className="text-xs font-medium truncate">
+                {isCheckingProfile
+                  ? "Loading..."
+                  : profileData?.name || "Streamer"}
+              </p>
               {/* Category Capsule */}
               <span className="text-xs text-primary bg-primary/10 px-2 py-0.5 rounded-full w-fit">
                 {category}
@@ -88,12 +105,14 @@ const LiveStreamCard = ({
               >
                 Watch Live
               </Link>
-            ) : isLive && currentAccount?.address === owner ? <Link
-              href={`/live/${streamId}`}
-              className="px-4 py-1.5 text-sm rounded-md bg-primary hover:bg-primary/90 active:scale-95 transition whitespace-nowrap"
-            >
-              Continue Stream
-            </Link> : (
+            ) : isLive && currentAccount?.address === owner ? (
+              <Link
+                href={`/live/${streamId}`}
+                className="px-4 py-1.5 text-sm rounded-md bg-primary hover:bg-primary/90 active:scale-95 transition whitespace-nowrap"
+              >
+                Continue Stream
+              </Link>
+            ) : (
               <button
                 disabled
                 className="px-4 py-1.5 text-sm rounded-md bg-gray-600 text-gray-400 cursor-not-allowed opacity-50 whitespace-nowrap"
@@ -117,7 +136,7 @@ const LiveStreamCard = ({
         </div>
       </div>
     </motion.div>
-  )
-}
+  );
+};
 
-export default LiveStreamCard
+export default LiveStreamCard;
