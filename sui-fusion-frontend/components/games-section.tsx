@@ -11,7 +11,7 @@ const GameCard = ({ title, image, fps, category, link }: { title: string; image:
         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
       />
       <div className="absolute inset-0 bg-linear-to-t from-black via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-4">
-        <Link href={link} className="w-full bg-primary hover:bg-primary/90 text-white py-2 font-bold text-sm transition-colors text-center rounded-md">
+        <Link href={link} target="_blank" className="w-full bg-primary hover:bg-primary/90 text-white py-2 font-bold text-sm transition-colors text-center rounded-md">
           Get Game
         </Link>
       </div>
