@@ -33,6 +33,8 @@ import { getIngest } from "@livepeer/react/external";
 import { useStreamHooks } from "@/hooks/use-create-stream";
 import TipCard from "@/components/miscellaneous/tip-card";
 import { useViewerCount } from "@/hooks/use-viewer-count";
+import { useReactions } from "@/hooks/use-reaction";
+import { FloatingEmoji } from "@/components/floating-emoji";
 
 function BroadcastStatus({
   __scopeBroadcast,
@@ -104,6 +106,7 @@ export default function BroadcastPage() {
   const [newMessage, setNewMessage] = useState("");
   const [openShareStream, setOpenShareStream] = useState(false);
   const viewerCount = useViewerCount(streamId as string || "")
+  const { reactions } = useReactions(streamId as string || "");
   const {
     data: streamObject,
     isLoading,
@@ -224,6 +227,7 @@ export default function BroadcastPage() {
             transition={{ duration: 0.6 }}
           >
             <Broadcast.Container className="relative max-h-[800px] h-full w-auto m-auto bg-blue-700/10 rounded-lg overflow-hidden flex items-center justify-center p-4 shadow-lg shadow-primary/10">
+          <FloatingEmoji reactions={reactions} />
               <Broadcast.Video
                 className="w-auto h-full object-contain rounded-xl m-auto"
                 width={1000}
@@ -246,7 +250,7 @@ export default function BroadcastPage() {
             {chatOpen && (
               <motion.div
                 key="chat"
-                className="fixed right-0 top-0 bottom-0 w-[320px] border-l border-gray-800 bg-black/70 backdrop-blur-md flex flex-col p-4 z-10"
+                className="fixed right-0 top-0 bottom-0 w-[320px] border-l border-gray-800 bg-black/70 backdrop-blur-md flex flex-col p-4 z-30"
                 initial={{ x: 320, opacity: 0 }}
                 animate={{ x: 0, opacity: 1 }}
                 exit={{ x: 320, opacity: 0 }}

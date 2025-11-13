@@ -21,6 +21,9 @@ import {
 import TipStreamerModal from "@/components/tip-streamer-modal";
 import { motion, AnimatePresence } from "framer-motion"; // ✅ Added for animations
 import { useViewerCount } from "@/hooks/use-viewer-count";
+import { FloatingEmoji } from "@/components/floating-emoji";
+import { useReactions } from "@/hooks/use-reaction";
+import { EmojiPicker } from "@/components/emoji-picker";
 
 export default function WatchStreamPage() {
   const { playbackId } = useParams();
@@ -34,6 +37,7 @@ export default function WatchStreamPage() {
   const [isStreamActive, setIsStreamActive] = useState(true);
   const [openTipStreamer, setOpenTipStreamer] = useState(false);
   const viewerCount = useViewerCount(streamInfo?.stream_id || "")
+  const { reactions, sendReaction } = useReactions(streamInfo?.stream_id || "" as string);
 
   const suiClient = useSuiClient();
 
@@ -224,7 +228,7 @@ export default function WatchStreamPage() {
         animate={{ y: 0, opacity: 1 }}
       >
         <motion.div
-          className="w-full h-full aspect-video rounded-lg overflow-hidden border border-gray-800 bg-black"
+          className="w-full h-full aspect-video rounded-lg overflow-hidden border border-gray-800 bg-black relative" // Added relative
           whileHover={{ scale: 1.01 }}
         >
           <Player.Root
@@ -235,9 +239,9 @@ export default function WatchStreamPage() {
             playbackId={playbackId as string}
             autoPlay
           >
-            <Player.Container>
-              <Player.Video className="w-full h-full object-contain" />
-
+            {!streamEnded && <FloatingEmoji reactions={reactions} />}
+            <Player.Container className="z-10!">
+              <Player.Video className="w-full h-full object-contain inset-0 z-10!" />
               <Player.LoadingIndicator className="absolute inset-0 flex items-center justify-center bg-black/70">
                 <Loader2 className="w-10 h-10 animate-spin text-primary" />
               </Player.LoadingIndicator>
@@ -268,6 +272,10 @@ export default function WatchStreamPage() {
             </Player.Container>
           </Player.Root>
         </motion.div>
+
+        {!streamEnded && <div className="fixed bottom-6 right-6 md:right-auto md:left-1/2 md:-translate-x-1/2 z-50!">
+          <EmojiPicker onEmojiSelect={sendReaction} />
+        </div>}
 
         {/* Stream Info */}
         <motion.div
@@ -310,75 +318,75 @@ export default function WatchStreamPage() {
 
       {/* 💬 Chat */}
       <div className="p-4 lg:p-0 rounded-xl overflow-hidden">
-      <motion.div
-        className="w-full lg:w-[350px] bg-gray-900/50 border-l border-gray-800 flex flex-col min-h-screen lg:min-h-[600px] h-screen lg:h-full"
-        initial={{ x: 30, opacity: 0 }}
-        animate={{ x: 0, opacity: 1 }}
-        transition={{ duration: 0.6 }}
-      >
-        <div className="p-4 border-b border-gray-700">
-          <h3 className="text-lg font-semibold">Live Chat</h3>
-          <p className="text-xs text-gray-500 mt-1">{messages.length} messages</p>
-        </div>
-
-        <div className="flex-1 overflow-y-auto p-4 space-y-3 flex flex-col">
-          <div className="flex flex-col gap-3">
-        {messages.length > 0 ? (
-          messages.map((msg) => (
-            <motion.div
-          key={msg.id}
-          className="flex items-start gap-2"
-          initial={{ opacity: 0, y: 5 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.2 }}
-            >
-          <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-xs font-bold">
-            {msg.user?.[0] || "?"}
+        <motion.div
+          className="w-full lg:w-[350px] bg-gray-900/50 border-l border-gray-800 flex flex-col min-h-screen lg:min-h-[600px] h-screen lg:h-full"
+          initial={{ x: 30, opacity: 0 }}
+          animate={{ x: 0, opacity: 1 }}
+          transition={{ duration: 0.6 }}
+        >
+          <div className="p-4 border-b border-gray-700">
+            <h3 className="text-lg font-semibold">Live Chat</h3>
+            <p className="text-xs text-gray-500 mt-1">{messages.length} messages</p>
           </div>
-          <div className="flex-1 bg-gray-800/50 p-2.5 rounded-lg">
-            <p className="text-xs font-semibold text-primary">
-              {msg.user}
+
+          <div className="flex-1 overflow-y-auto p-4 space-y-3 flex flex-col">
+            <div className="flex flex-col gap-3">
+              {messages.length > 0 ? (
+                messages.map((msg) => (
+                  <motion.div
+                    key={msg.id}
+                    className="flex items-start gap-2"
+                    initial={{ opacity: 0, y: 5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-xs font-bold">
+                      {msg.user?.[0] || "?"}
+                    </div>
+                    <div className="flex-1 bg-gray-800/50 p-2.5 rounded-lg">
+                      <p className="text-xs font-semibold text-primary">
+                        {msg.user}
+                      </p>
+                      <p className="text-sm text-gray-200 mt-0.5">{msg.text}</p>
+                    </div>
+                  </motion.div>
+                ))
+              ) : (
+                <p className="text-gray-500 text-sm text-center mt-8">
+                  No messages yet.
+                </p>
+              )}
+            </div>
+          </div>
+
+          <div className="p-4 border-t border-gray-700">
+            <div className="flex items-center gap-2">
+              <Input
+                placeholder={streamEnded ? "Stream ended" : "Say something..."}
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+                disabled={streamEnded}
+                className="flex-1 bg-gray-800/50 border-gray-700 text-white"
+              />
+              <motion.div whileTap={{ scale: 0.9 }}>
+                <Button
+                  onClick={sendMessage}
+                  disabled={!message.trim() || streamEnded}
+                  className="bg-primary hover:bg-primary/90 text-white"
+                >
+                  <Send size={16} />
+                </Button>
+              </motion.div>
+            </div>
+            <p className="text-xs text-gray-500 mt-2 text-center">
+              {streamEnded
+                ? "Chat disabled"
+                : `Chat as ${user.name}`}
             </p>
-            <p className="text-sm text-gray-200 mt-0.5">{msg.text}</p>
           </div>
-            </motion.div>
-          ))
-        ) : (
-          <p className="text-gray-500 text-sm text-center mt-8">
-            No messages yet.
-          </p>
-        )}
-          </div>
-        </div>
-
-        <div className="p-4 border-t border-gray-700">
-          <div className="flex items-center gap-2">
-        <Input
-          placeholder={streamEnded ? "Stream ended" : "Say something..."}
-          value={message}
-          onChange={(e) => setMessage(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && sendMessage()}
-          disabled={streamEnded}
-          className="flex-1 bg-gray-800/50 border-gray-700 text-white"
-        />
-        <motion.div whileTap={{ scale: 0.9 }}>
-          <Button
-            onClick={sendMessage}
-            disabled={!message.trim() || streamEnded}
-            className="bg-primary hover:bg-primary/90 text-white"
-          >
-            <Send size={16} />
-          </Button>
         </motion.div>
-          </div>
-          <p className="text-xs text-gray-500 mt-2 text-center">
-        {streamEnded
-          ? "Chat disabled"
-          : `Chat as ${user.name}`}
-          </p>
-        </div>
-      </motion.div>
       </div>
 
       <TipStreamerModal
