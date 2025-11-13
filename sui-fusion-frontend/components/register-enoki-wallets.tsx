@@ -15,6 +15,7 @@ export function RegisterEnokiWallets() {
       providers: {
         google: {
           clientId: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID!,
+          redirectUrl: `${window.location.origin}/auth`,
         },
       },
       client,

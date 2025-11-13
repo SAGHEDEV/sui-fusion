@@ -59,6 +59,12 @@ function ConnectWalletModal({
 
     try {
       setIsConnecting(true);
+
+      // Store current page to redirect back after auth
+      if (typeof window !== "undefined") {
+        sessionStorage.setItem("auth_redirect", window.location.pathname);
+      }
+
       connect(
         { wallet: googleWallet },
         {
